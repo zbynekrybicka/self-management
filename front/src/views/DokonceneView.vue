@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1 class="text-success font-weight-bold mt-5 mb-4">Dokončené úkoly</h1>
+        <h5 class="text-success font-weight-bold mt-5 mb-4 text-center">Dokončené úkoly</h5>
         <ul class="list-group">
             <li v-for="(skupina, index) of skupiny.filter(s => ukoly.filter(u => jeVeSkupine(u, s)).length > 0)">
                 <div class="list-group-item list-group-item-action font-weight-bold" @click="zabaleno[index] = !zabaleno[index]">

@@ -1,26 +1,53 @@
 <template>
     <div>
-        <h1 class="font-weight-bold mt-5 mb-4">Tabule</h1>
-        <ul>
+        <h5 class="font-weight-bold mt-5 mb-4 text-center">Rutina</h5>
+
+        <ul class="list-group">
+            <li v-for="ukol of rutina" class="list-group-item list-group-item-action font-weight-bold" @click.prevent="zacitSPraci(ukol)" v-html="nazev(ukol, true)" />
+        </ul>
+
+        <h5 class="font-weight-bold mt-5 mb-4 text-center">Prioritní úkoly</h5>
+        <ul class="list-group">
             <li v-for="(skupina, index) of skupiny.filter(s => ukoly.filter(u => jeVeSkupine(u, s)).length > 0)">
-                <div class="list-group-item list-group-item-action" @click="zabaleno[index] = !zabaleno[index]">
+                <div class="list-group-item list-group-item-action" @click="zabaleno[index] = !zabaleno[index]"
+                        :class="jeVeSkupine(rozpracovanyUkol, skupina) ? 'list-group-item-primary' : ''">
                     <div class="row">
-                        <div class="col font-weight-bold">{{ skupina.nazev }}</div>
-                        <div class="col" v-html="casNaUkolech.find(c => c.id === skupina.id).cas" />
-                        <div class="col">{{ ukoly.filter(u => jeVeSkupine(u, skupina)).length }}</div>
+                        <div class="col-12 font-weight-bold">{{ skupina.nazev }}</div>
+                        <div class="col-10" v-html="casNaUkolech.find(c => c.id === skupina.id).cas" />
+                        <div class="col-2">{{ ukoly.filter(u => jeVeSkupine(u, skupina)).length }}</div>
                     </div>
                 </div>
                 <ul v-if="!zabaleno[index]">
-                    <li class="list-group-item list-group-item-action" v-for="ukol in ukoly.filter(u => jeVeSkupine(u, skupina))" :key="ukol.id" @click="vyberUkol(ukol)">
+                    <li class="list-group-item list-group-item-action" 
+                            v-for="ukol in ukoly.filter(u => jeVeSkupine(u, skupina))" 
+                            :key="ukol.id" 
+                            @click="vyberUkol(ukol)"
+                            :class="rozpracovanyUkol.id === ukol.id ? 'list-group-item-primary' : ''">
                         <div class="row">
                             <div v-html="nazev(ukol)" class="col-12 col-sm-4" />
-                            <div class="col-12 col-sm-4" v-html="casNaUkolech.find(c => c.id === ukol.id).cas" />
-                            <div class="col-12 col-sm-4 text-right">
+                            <div class="col-9 col-sm-4" v-html="casNaUkolech.find(c => c.id === ukol.id).cas" />
+                            <div class="col-3 col-sm-4 text-right">
                                 <a href="#" class="text-primary" @click.prevent.stop="zacitSPraci(ukol)">Začít</a>
                             </div>
                         </div>
                     </li>
                 </ul>
+            </li>
+        </ul>
+
+        <h5 class="font-weight-bold mt-5 mb-4 text-center">Zpracované úkoly</h5>
+
+        <ul class="list-group">
+            <li v-for="cas of ukolyPodleCasu" class="list-group-item">
+                <div class="row" @click.prevent="editovatCas = editovatCas ? null : cas">
+                    <div class="col-9 font-weight-bold">{{ cas.ukol.nazev }}</div>
+                    <div class="col-3">{{ (cas.zacatek.getHours()+"").padStart(2, "0") }}:{{ (cas.zacatek.getMinutes()+"").padStart(2, "0") }}</div>
+                </div>
+                <div class="row" v-if="editovatCas && editovatCas.id === cas.id">
+                    <div class="col-12">
+                        <input type="number" class="form-control" :value="posunoutZpet" @keyup.enter="posunoutCasZpet" />
+                    </div>
+                </div>
             </li>
         </ul>
     </div>
@@ -31,7 +58,9 @@
 export default {
     name: "FrontaView",
     data: () => ({
-        zabaleno: []
+        zabaleno: [],
+        editovatCas: null,
+        posunoutZpet: 0,
     }),
     computed: {
         skupiny() {
@@ -42,17 +71,33 @@ export default {
         },
         casNaUkolech() {
             return this.$store.getters.casNaUkolech
+        },
+        rozpracovanyUkol() {
+            return this.$store.getters.rozpracovanyUkol
+        },
+        ukolyPodleCasu() {
+            return this.$store.getters.ukolyPodleCasu
+        },
+        rutina() {
+            return this.$store.getters.specifickeUkolyByTyp("rutina")
         }
     },
     methods: {
-        nazev(ukol) {
+        posunoutCasZpet(e) {
+            this.$store.dispatch('putCasyPosunout', { id: this.editovatCas.id, minuty: parseInt(e.target.value) }).then(() => {
+                this.editovatCas = null
+            })
+        },
+        nazev(ukol, vcetnePrvniho = false) {
             const nazevArr = [ ukol.nazev ]            
             let vybranyUkol = this.$store.getters.vybranyUkol(ukol.ukol_id)
             while (vybranyUkol) {
                 nazevArr.push(vybranyUkol.nazev)
                 vybranyUkol = this.$store.getters.vybranyUkol(vybranyUkol.ukol_id)
             }
-            nazevArr.pop()
+            if (!vcetnePrvniho) {
+                nazevArr.pop()
+            }
             return nazevArr.reverse().join(' &ndash; ')
         },
         vyberUkol(ukol) {
@@ -74,9 +119,9 @@ export default {
                 ukol = this.$store.getters.vybranyUkol(ukol.ukol_id)
             }
             return ukol.id === skupina.id
-        }
+        },
     },
-    mounted() {
+    created() {
         this.zabaleno = this.skupiny.map(() => true)
     }
 }

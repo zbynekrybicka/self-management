@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 class="font-weight-bold mt-5 mb-4">Úkoly</h1>
+    <h5 class="font-weight-bold mt-5 mb-4 text-center">Úkoly</h5>
 
     <h3 class="font-weight-bold" v-if="vybranyUkol" v-html="nazev" />
 
@@ -11,6 +11,25 @@
       <div class="form-group">
         <textarea class="form-control" v-model="vybranyUkol.popis" rows="5" @change="ulozitPopis"/>
       </div>
+      <div class="form-group">
+        <input class="form-control" type="text" @keyup.enter="pridatPoznamku" placeholder="Přidat poznámku..."/>
+      </div>
+      <ul class="list-group">
+        <li v-for="poznamka of poznamky" class="list-group-item">
+          <div class="row">
+            <div class="col-12">
+              {{ poznamka.zapsano.getDate() }}. 
+              {{ poznamka.zapsano.getMonth() }}. 
+              {{ poznamka.zapsano.getFullYear() }}
+              {{ poznamka.zapsano.getHours() }}:{{ (poznamka.zapsano.getMinutes()+"").padStart(2, "0") }}
+            </div>
+            <div class="col-12 font-weight-bold">{{ poznamka.poznamka }}</div>
+          </div>
+        </li>
+      </ul>      
+
+      <hr />
+
       <div class="form-inline">
         <div class="mr-2 mb-2">
           <button class="btn btn-primary" @click="zacitSPraci">Začít</button>
@@ -30,12 +49,21 @@
         <div class="mr-2 mb-2">
           <button class="btn btn-primary" @click="presunoutUkol = true">Přesunout</button>
         </div>
+        <div class="mr-2 mb-2">
+          <button class="btn btn-primary" @click="prevestNaProjekt">Převést na projekt</button>
+        </div>
+        <div class="mr-2 mb-2" v-if="!jeRutina">
+          <button class="btn btn-primary" @click="oznacitZaRutinu">Označit jako rutinu</button>
+        </div>
+        <div class="mr-2 mb-2" v-if="jeRutina">
+          <button class="btn btn-danger" @click="zrusitRutinu">Zrušit rutinu</button>
+        </div>
       </div>
     </div>
 
     <hr v-if="vybranyUkol" />
 
-    <SeznamUkolu :id="vybranyUkol ? vybranyUkol.id : null" :rozbaleno="false" />
+    <SeznamUkolu :id="vybranyUkol ? vybranyUkol.id : null" :rozbaleno="false" :root="true" />
 
     <hr />
 
@@ -69,6 +97,9 @@ export default {
     projekty() {
       return this.$store.getters.ukolyByUkolId(null)
     },
+    poznamky() {
+      return this.$store.getters.poznamkyById(this.id)
+    },
     nazev() {      
       let nazev = []
       let vybranyUkol = this.vybranyUkol
@@ -80,9 +111,25 @@ export default {
     },
     jeVeFronte() {
       return this.$store.getters.ukolyVeFronte.includes(this.vybranyUkol)
+    },
+    jeRutina() {
+      return !!this.$store.getters.specificke_ukoly.find(su => su.ukol_id === this.id && su.typ === "rutina")
     }
   },
   methods: {
+    pridatPoznamku(e) {
+      if (e.target.value.length > 0) {
+        this.$store.dispatch('postPoznamky', { ukol_id: this.id, poznamka: e.target.value }).then(() => {
+          e.target.value = ""
+        })
+      }
+    },
+    oznacitZaRutinu() {
+      this.$store.dispatch('postSpecifickeUkoly', { ukol_id: this.id, typ: "rutina" })
+    },
+    zrusitRutinu() {
+      this.$store.dispatch('deleteSpecifickeUkoly', { ukol_id: this.id, typ: "rutina" })
+    },
     ulozitNadpis(e) {
       console.log(e.target.innerText)
       this.vybranyUkol.nazev = e.target.innerText
@@ -117,6 +164,12 @@ export default {
     },
     odebratZFronty() {
       this.$store.dispatch('deletePrioritniFronta', this.vybranyUkol)
+    },
+    prevestNaProjekt() {
+      this.$store.dispatch('putUkolPresunout', { 
+          id: parseInt(this.$route.params.id),
+          ukol_id: null 
+      })
     }
   }
 }

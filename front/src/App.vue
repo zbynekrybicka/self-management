@@ -3,7 +3,7 @@
   <div class="fixed font-weight-bold text-success" v-if="success">{{ success }}</div>
   <div class="fixed font-weight-bold text-danger" v-if="error">{{ error }}</div>
   <nav v-if="isLoggedIn">
-    <router-link to="/">Tabule</router-link> |
+    <router-link to="/">Nástěnka</router-link> |
     <router-link to="/ukoly">Úkoly</router-link> |
     <router-link to="/dokoncene">Dokončené</router-link> |
     <a href="#" @click.prevent="logout">Odhlásit se</a>

@@ -20,10 +20,36 @@ export default createStore({
     }
   },
   getters: {
-    predchoziUkol(state) {
+    poznamkyById: state => ukol_id => {
+      return state.data.poznamky.filter(p => p.ukol_id === ukol_id).map(p => ({
+        ...p,
+        zapsano: new Date(p.zapsano * 1000)
+      })).reverse()
+    },
+    specifickeUkolyByTyp: state => typ => {
+      return state.data.specificke_ukoly.filter(su => su.typ === typ).map(su => state.data.ukoly.find(u => u.id === su.ukol_id))
+    },
+    specificke_ukoly(state) {
+      return state.data.specificke_ukoly
+    },
+    predchoziUkol(state, getters) {
       let rozpracovanyCas = state.data.casy.filter(c => c.konec !== null)
-      rozpracovanyCas = rozpracovanyCas[rozpracovanyCas.length - 1]
-      return state.data.ukoly.find(u => u.id === rozpracovanyCas.ukol_id)
+      let projekt = getters.projektById(getters.rozpracovanyUkol.id)
+      let i
+      for (i = rozpracovanyCas.length; i > 0; i--) {
+        let druhyProjekt = getters.projektById(rozpracovanyCas[i - 1].ukol_id)
+        if (projekt.id !== druhyProjekt.id) {
+          break;
+        }
+      }
+      return state.data.ukoly.find(u => u.id === rozpracovanyCas[i - 1].ukol_id)
+    },
+    projektById: state => id => {
+      let ukol = state.data.ukoly.find(u => u.id === id)
+      while (ukol.ukol_id) {
+        ukol = state.data.ukoly.find(u => u.id === ukol.ukol_id)
+      }
+      return ukol
     },
     dokonceneUkoly(state) {
       return state.data.ukoly.filter(u => u.stav_id === 2)
@@ -37,23 +63,43 @@ export default createStore({
     prvniCas(state) {
       return state.data.casy.find(c => c.zacatek)
     },
-    ukolyVeFronte(state) {
+    ukolyVeFronte(state, getters) {
       if (state.data) {
-        return state.data.prioritni_fronta
-          .filter(pf => state.data.ukoly.find(u => u.stav_id === 1 && pf.ukol_id === u.id))
-          .map(pf => state.data.ukoly.find(u => pf.ukol_id === u.id))
+        const fronta = [
+          ...state.data.prioritni_fronta
+            .filter(pf => state.data.ukoly.find(u => u.stav_id === 1 && pf.ukol_id === u.id))
+            .map(u => u.ukol_id), 
+          
+          // ...getters.casNaUkolech
+          //   .filter(c => c.cas.match(/[0-9]+:[0-9]+:[0-9]+:[0-9]+/))
+          //   .map(u => u.id)
+        ]
+        return Array.from(new Set(fronta)).map(id => state.data.ukoly.find(u => id === u.id))
+          .filter(u => u.ukol_id !== null)
           .reverse()
+        
       } else {
         return []
       }
     },
-    casNaUkolech(state) {
-      let _casy = state.data.casy.filter(c => {
+    casy(state) {
+      return state.data.casy.filter(c => {
         const zacatek = new Date(c.zacatek * 1000)
         const konec = new Date(c.konec * 1000)
         return zacatek > state.filtrace.zacatek && zacatek < state.filtrace.konec ||
           konec > state.filtrace.zacatek && konec < state.filtrace.konec
       })
+    },
+    ukolyPodleCasu(state, getters) {
+      return getters.casy.map(c => ({
+        ...c,
+        zacatek: new Date(c.zacatek * 1000),
+        konec: new Date(c.konec * 1000),
+        ukol: state.data.ukoly.find(u => u.id === c.ukol_id)
+      }))
+    },
+    casNaUkolech(state, getters) {
+      let _casy = getters.casy
       let casy = _casy.map(c => ({ ukol_id: c.ukol_id, cas: c.konec - c.zacatek }))
       let groups = {}
       for (const cas of casy) {
@@ -140,6 +186,22 @@ export default createStore({
     }
   },  
   mutations: {
+    postPoznamky(state, data) {
+      state.data.poznamky.push(data)
+    },
+    deleteSpecifickeUkoly(state, data) {
+      const index = state.data.specificke_ukoly.findIndex(su => su.ukol_id === data.ukol_id && su.typ === data.typ)
+      state.data.specificke_ukoly.splice(index, 1)
+    },
+    postSpecifickeUkoly(state, data) {
+      state.data.specificke_ukoly.push(data)
+    },
+    putCasyPosunout(state, data) {
+      const predchozi = state.data.casy.find(c => c.id === data.predchozi.id)
+      predchozi.konec = data.predchozi.konec
+      const aktualni = state.data.casy.find(c => c.id === data.aktualni.id)
+      aktualni.zacatek = data.aktualni.zacatek
+    },
     putUkolPresunout(state, data) {
       const ukol = state.data.ukoly.find(u => u.id === data.id);
       ukol.ukol_id = data.ukol_id
@@ -202,6 +264,70 @@ export default createStore({
     }
   },
   actions: {
+    postPoznamky({ commit, state }, data) {
+      commit('setLoading', true)
+      return axios
+        .post(window.API_URL + '/poznamky', data, { headers: { Authorization: `Bearer ${state.authToken}` }})
+        .then((response) => {
+          commit("postPoznamky", response.data)
+          commit("success", response.status)
+        })
+        .catch((error) => {
+          console.error(error)
+          commit("setError", error.response.status)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
+    deleteSpecifickeUkoly({ commit, state }, data) {
+      commit('setLoading', true)
+      return axios
+        .delete(window.API_URL + '/specificke-ukoly/' + Object.values(data).join('-'), { headers: { Authorization: `Bearer ${state.authToken}` }})
+        .then((response) => {
+          commit("deleteSpecifickeUkoly", data)
+          commit("success", response.status)
+        })
+        .catch((error) => {
+          console.error(error)
+          commit("setError", error.response.status)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
+    postSpecifickeUkoly({ commit, state }, data) {
+      commit('setLoading', true)
+      return axios
+        .post(window.API_URL + '/specificke-ukoly', data, { headers: { Authorization: `Bearer ${state.authToken}` }})
+        .then((response) => {
+          commit("postSpecifickeUkoly", data)
+          commit("success", response.status)
+        })
+        .catch((error) => {
+          console.error(error)
+          commit("setError", error.response.status)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
+    putCasyPosunout({ commit, state }, data) {
+      commit('setLoading', true)
+      return axios
+        .put(window.API_URL + '/casy-presunout', data, { headers: { Authorization: `Bearer ${state.authToken}` }})
+        .then((response) => {
+          commit("putCasyPosunout", response.data)
+          commit("success", response.status)
+        })
+        .catch((error) => {
+          console.error(error)
+          commit("setError", error.response.status)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
     putUkolPresunout({ commit, state }, data) {
       commit('setLoading', true)
       return axios
@@ -319,6 +445,9 @@ export default createStore({
         .put(window.API_URL + '/ukoly-dokonceno', { id }, { headers: { Authorization: `Bearer ${state.authToken}` }})
         .then((response) => {
           commit("putUkolyDokonceno", id)
+          if (response.data) {
+            commit("postPrepnoutUkol", response.data)
+          }
           commit("success", response.status)
         })
         .catch((error) => {

@@ -1,17 +1,17 @@
 <template>
-    <ul>
+    <ul :class="root ? 'list-group' : ''">
         <li class="list-group-item list-group-item-action" v-if="id && vybranyUkol && vybranyUkol.id === id" @click="vybratUkol(vybranyUkol.ukol_id)">^O úroveň výš</li>
         <li v-for="(ukol, index) of ukoly" :key="ukol.id">
-            <a class="list-group-item list-group-item-action" @click.prevent="vybratUkol(ukol.id)">
+            <a class="list-group-item list-group-item-action" @click.prevent="vybratUkol(ukol.id)" :class="rozpracovanyUkol.id === ukol.id ? 'list-group-item-primary' : ''">
                 <div class="row">
-                    <div class="col-6 col-sm-6 col-md-4">
+                    <div class="col-12 col-sm-6 col-md-4">
                         <span class="badge badge-primary" 
                             @click.stop="rozbalenySeznam[index] = !rozbalenySeznam[index]"
                             v-if="podrizeneUkoly(ukol.id).length"
                             >{{ rozbalenySeznam[index] ? '&ndash;' : '+' }}</span>
                         {{ ukol.nazev }}
                     </div>
-                    <div class="col-6 col-sm-6 col-md-4" v-html="casyNaUkolech.find(x => x.id === ukol.id).cas" />
+                    <div class="col-12 col-sm-6 col-md-4" v-html="casyNaUkolech.find(x => x.id === ukol.id).cas" />
                     <div class="col-12 col-md-4 text-right" v-if="ukol.ukol_id !== null">
                         <a href="#" class="text-primary" v-if="!jeVeFronte(ukol)" @click.prevent.stop="pridatDoFronty(ukol)">Přidat do fronty</a>
                         <a href="#" class="text-danger" v-if="jeVeFronte(ukol)" @click.prevent.stop="odebratZFronty(ukol)">Odebrat z fronty</a>
@@ -20,7 +20,7 @@
                 </div>
 
             </a>
-            <SeznamUkolu :id="ukol.id" v-if="rozbalenySeznam[index]" :rozbaleno="false" />
+            <SeznamUkolu :id="ukol.id" v-if="rozbalenySeznam[index]" :rozbaleno="false" :root="false" />
         </li>
     </ul>
 </template>
@@ -33,7 +33,8 @@ export default {
     }),
     props: {
         id: { required: false, type: Number, default: null },
-        rozbaleno: { required: false, default: true, }
+        rozbaleno: { required: false, default: true, },
+        root: { required: false, default: false }
     },
     computed: {
         ukoly() {
@@ -44,6 +45,9 @@ export default {
         },
         casyNaUkolech() {
             return this.$store.getters.casNaUkolech
+        },
+        rozpracovanyUkol() {
+            return this.$store.getters.rozpracovanyUkol
         }
     },
     methods: {
@@ -54,12 +58,7 @@ export default {
             this.$router.push('/ukoly/' + (id ? id : ''));
         },
         zacitSPraci(ukol) {
-            this.$store.dispatch('postPrepnoutUkol', ukol).then(() => {
-                scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
-                })
-            })
+            this.$store.dispatch('postPrepnoutUkol', ukol)
         },
         jeVeFronte(ukol) {
             return this.$store.getters.ukolyVeFronte.includes(ukol)
