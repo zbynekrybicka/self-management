@@ -6,6 +6,17 @@
             <li v-for="ukol of rutina" class="list-group-item list-group-item-action font-weight-bold" @click.prevent="zacitSPraci(ukol)" v-html="nazev(ukol, true)" />
         </ul>
 
+        <h5 class="font-weight-bold mt-5 mb-4 text-center">Plnění plánu</h5>
+
+        <ul class="list-group">
+            <li v-for="p of plan" class="list-group-item list-group-item-action font-weight-bold" @click.prevent="zacitSPraci(p.ukol)" :style="{ background: p.progresbar } ">
+                <div class="row">
+                    <div class="col-12 col-sm-10" v-html="nazev(p.ukol, true)"></div>
+                    <div class="col-12 col-sm-2 text-right">{{ p.odpracovano }}/{{ p.cas }}</div>
+                </div>
+            </li>
+        </ul>
+
         <h5 class="font-weight-bold mt-5 mb-4 text-center">Prioritní úkoly</h5>
         <ul class="list-group">
             <li v-for="(skupina, index) of skupiny.filter(s => ukoly.filter(u => jeVeSkupine(u, s)).length > 0)">
@@ -40,12 +51,12 @@
         <ul class="list-group">
             <li v-for="cas of ukolyPodleCasu" class="list-group-item">
                 <div class="row" @click.prevent="editovatCas = editovatCas ? null : cas">
-                    <div class="col-9 font-weight-bold">{{ cas.ukol.nazev }}</div>
-                    <div class="col-3">{{ (cas.zacatek.getHours()+"").padStart(2, "0") }}:{{ (cas.zacatek.getMinutes()+"").padStart(2, "0") }}</div>
+                    <div class="col-12 col-sm-9 font-weight-bold" v-html="nazev(cas.ukol, true)" />
+                    <div class="col-12 col-sm-3 text-right">{{ (cas.zacatek.getHours()+"").padStart(2, "0") }}:{{ (cas.zacatek.getMinutes()+"").padStart(2, "0") }}</div>
                 </div>
                 <div class="row" v-if="editovatCas && editovatCas.id === cas.id">
                     <div class="col-12">
-                        <input type="number" class="form-control" :value="posunoutZpet" @keyup.enter="posunoutCasZpet" />
+                        <input type="number" class="form-control" value="0" @keyup.enter="posunoutCasZpet" />
                     </div>
                 </div>
             </li>
@@ -58,6 +69,7 @@
 export default {
     name: "FrontaView",
     data: () => ({
+        seconds: 0,
         zabaleno: [],
         editovatCas: null,
         posunoutZpet: 0,
@@ -80,6 +92,10 @@ export default {
         },
         rutina() {
             return this.$store.getters.specifickeUkolyByTyp("rutina")
+        },
+        plan() {
+            this.seconds
+            return this.$store.getters.plan()
         }
     },
     methods: {
@@ -123,6 +139,7 @@ export default {
     },
     created() {
         this.zabaleno = this.skupiny.map(() => true)
+        setInterval(() => this.seconds++, 1000)
     }
 }
 </script>

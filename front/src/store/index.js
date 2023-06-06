@@ -20,6 +20,80 @@ export default createStore({
     }
   },
   getters: {
+    nazev: state => (ukol, oddelovac) => {
+        let nazev = [];
+        while (ukol) {
+            nazev.push(ukol.nazev);
+            ukol = state.data.ukoly.find(u => u.id === ukol.ukol_id)
+        }
+        return nazev.reverse().join(oddelovac);
+    },
+    kvotyByUkolId: state => id => {
+      return state.data.kvoty.filter(k => k.ukol_id === id).sort((a, b) => a.datum > b.datum ? 1 : 0)
+    },
+    plan: (state, getters) => (den = null) => {
+      const kvoty = state.data.kvoty.filter(k => {
+        if (den) {
+          return den === k.datum
+        } else {
+          const datum = new Date(k.datum)
+          return state.filtrace.zacatek <= datum && state.filtrace.konec > datum
+        }
+      })
+      const result = []
+      for (const kvota of kvoty) {
+        let item = result.find(r => r.ukol_id === kvota.ukol_id)
+        if (!item) {
+          item = { ukol_id: kvota.ukol_id, cas: 0 }
+          result.push(item)
+        }
+        item.cas += kvota.cas
+      }
+      let aktualniKonec = null
+      return result.map(r => {
+        const casy = state.data.casy.filter(c => {
+          const zacatek = new Date(c.zacatek * 1000)
+          const konec = new Date(c.konec * 1000)
+          let zacatekFiltrace
+          let konecFiltrace
+          if (den) {
+            zacatekFiltrace = new Date(den + " 00:00:00")
+            konecFiltrace = new Date(den + " 23:59:59")
+          } else {
+            zacatekFiltrace = state.filtrace.zacatek
+            konecFiltrace = state.filtrace.konec
+          }
+          return zacatek > zacatekFiltrace && zacatek < konecFiltrace ||
+            konec > zacatekFiltrace && konec < konecFiltrace
+        })
+  
+        const cas = casy
+          .filter(c => c.ukol_id === r.ukol_id)
+          .reduce((prev, cur) => {
+            let konec = cur.konec ? new Date(cur.konec * 1000) : new Date()
+            if (!cur.konec) {
+              aktualniKonec = new Date()
+            }
+            konec = Math.floor(konec.getTime() / 1000)
+            return prev + (konec - cur.zacatek)
+          }, 0)
+
+        let splneno = Math.ceil(cas / r.cas * 100 / 60)
+        if (splneno > 100) {
+          splneno = 100
+        }
+
+        return {
+          ...r,
+          cas: Math.floor(r.cas / 60) + ":" + ((r.cas % 60)+"").padStart(2, "0"),
+          odpracovano: Math.floor(cas / 60 / 60) + ":" + ((Math.floor(cas / 60) % 60 )+"").padStart(2, "0") + ":" + (Math.floor(cas % 60)+"").padStart(2, "0"),
+          ukol: state.data.ukoly.find(u => u.id === r.ukol_id),
+          splneno,
+          progresbar: `linear-gradient(to right, #CFC 0%, #CFC ${splneno}%, white ${splneno}%, white 100%)`,
+          aktualniKonec
+        }
+      })
+    },
     poznamkyById: state => ukol_id => {
       return state.data.poznamky.filter(p => p.ukol_id === ukol_id).map(p => ({
         ...p,
@@ -186,6 +260,16 @@ export default createStore({
     }
   },  
   mutations: {
+    postKvotyKopiruj(state, kvoty) {
+      state.data.kvoty = [...state.data.kvoty, ...kvoty]
+    },
+    deleteKvoty(state, id) {
+      const index = state.data.kvoty.findIndex(k => k.id === id)
+      state.data.kvoty.splice(index, 1)
+    },
+    postKvoty(state, data) {
+      state.data.kvoty.push(data)
+    },
     postPoznamky(state, data) {
       state.data.poznamky.push(data)
     },
@@ -252,7 +336,7 @@ export default createStore({
       state.success = status
     },
     setError(state, status) {
-      setTimeout(() => state.success = false, 3000)
+      setTimeout(() => state.error = false, 3000)
       state.error = status
     },
     setLoading(state, isLoading) {
@@ -264,6 +348,54 @@ export default createStore({
     }
   },
   actions: {
+    postKvotyKopiruj({ commit, state }, data) {
+      commit('setLoading', true)
+      return axios
+        .post(window.API_URL + '/kvoty-kopiruj', data, { headers: { Authorization: `Bearer ${state.authToken}` }})
+        .then((response) => {
+          commit("postKvotyKopiruj", response.data)
+          commit("success", response.status)
+        })
+        .catch((error) => {
+          console.error(error)
+          commit("setError", error.response.status)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
+    deleteKvoty({ commit, state }, data) {
+      commit('setLoading', true)
+      return axios
+        .delete(window.API_URL + '/kvoty/' + data.id, { headers: { Authorization: `Bearer ${state.authToken}` }})
+        .then((response) => {
+          commit("deleteKvoty", data.id)
+          commit("success", response.status)
+        })
+        .catch((error) => {
+          console.error(error)
+          commit("setError", error.response.status)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
+    postKvoty({ commit, state }, data) {
+      commit('setLoading', true)
+      return axios
+        .post(window.API_URL + '/kvoty', data, { headers: { Authorization: `Bearer ${state.authToken}` }})
+        .then((response) => {
+          commit("postKvoty", response.data)
+          commit("success", response.status)
+        })
+        .catch((error) => {
+          console.error(error)
+          commit("setError", error.response.status)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
     postPoznamky({ commit, state }, data) {
       commit('setLoading', true)
       return axios
@@ -491,19 +623,14 @@ export default createStore({
         })
     },
     getAll({ commit, state }) {
-      commit('setLoading', true)
       return axios
         .get(window.API_URL + '/all', { headers: { Authorization: `Bearer ${state.authToken}` }})
         .then((response) => {
           commit("getAll", response.data)
-          commit("success", response.status)
         })
         .catch((error) => {
           console.error(error)
-          commit("setError", error.response.status)
-        })
-        .finally(() => {
-          commit('setLoading', false)
+          commit("setError", "POZOR! Nemáš aktuální data.")
         })
     },
     authenticate({ commit, dispatch }, code) {
@@ -530,7 +657,15 @@ export default createStore({
         dispatch("getAll")
       }
     },
-},
+    sync({ state, dispatch }) {
+      return axios.get(window.API_URL + '/system/posledni_update', { headers: { Authorization: `Bearer ${state.authToken}` }} )
+      .then((response) => {
+        if (state.data.system.posledni_update !== response.data) {
+          dispatch("getAll")
+        }      
+      })
+  }
+  },
   modules: {
   }
 })

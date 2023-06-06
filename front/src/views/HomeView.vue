@@ -11,6 +11,9 @@
       <div class="form-group">
         <textarea class="form-control" v-model="vybranyUkol.popis" rows="5" @change="ulozitPopis"/>
       </div>
+
+      <h6 class="font-weight-bold mt-5 mb-4 text-center">Poznámky</h6>
+
       <div class="form-group">
         <input class="form-control" type="text" @keyup.enter="pridatPoznamku" placeholder="Přidat poznámku..."/>
       </div>
@@ -28,7 +31,29 @@
         </li>
       </ul>      
 
-      <hr />
+      <h6 class="font-weight-bold mt-5 mb-4 text-center">Kvóty</h6>
+
+      <div class="form-group">
+        <div class="row">
+          <div class="col-12 col-sm-6">
+            <input class="form-control" type="date" v-model="datumKvoty" />
+          </div>
+          <div class="col-12 col-sm-6">
+            <input class="form-control" type="number" placeholder="Počet minut" value="0" @keyup.enter="pridatKvotu" />
+          </div>
+        </div>
+      </div>
+
+      <ul class="list-group">
+        <li class="list-group-item list-group-item-action" v-for="kvota of kvoty" @click="smazatKvotu(kvota)">
+          <div class="row">
+            <div class="col-6">{{ kvota.datum.split("-")[2] }}. {{ kvota.datum.split("-")[1] }}. {{ kvota.datum.split("-")[0] }}</div>
+            <div class="col-6">{{ Math.floor(kvota.cas / 60) }}:{{ kvota.cas % 60 }}</div>
+          </div>
+        </li>
+      </ul>
+
+      <!--h6 class="font-weight-bold mt-5 mb-4 text-center">Body</h6-->
 
       <div class="form-inline">
         <div class="mr-2 mb-2">
@@ -81,6 +106,7 @@ export default {
   name: 'HomeView',
   components: { NovyUkol, SeznamUkolu, PresunoutUkol },
   data: () => ({
+    datumKvoty: new Date().toISOString().split('T')[0],
     vybranyProjekt: 0,
     presunoutUkol: false
   }),
@@ -114,9 +140,29 @@ export default {
     },
     jeRutina() {
       return !!this.$store.getters.specificke_ukoly.find(su => su.ukol_id === this.id && su.typ === "rutina")
+    },
+    kvoty() {
+      return this.$store.getters.kvotyByUkolId(this.id)
     }
   },
   methods: {
+    smazatKvotu(kvota) {
+      if (confirm('Opravdu chcete smazat kvótu?')) {
+        this.$store.dispatch('deleteKvoty', kvota)
+      }
+    },
+    pridatKvotu(e) {
+      console.log(e)
+      if (e.target.value > 0) {
+        this.$store.dispatch('postKvoty', {
+          ukol_id: this.id,
+          datum: this.datumKvoty,
+          cas: e.target.value
+        })
+      } else {
+        alert('Nelze přidat nulový čas.')
+      }
+    },
     pridatPoznamku(e) {
       if (e.target.value.length > 0) {
         this.$store.dispatch('postPoznamky', { ukol_id: this.id, poznamka: e.target.value }).then(() => {

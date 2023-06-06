@@ -5,6 +5,7 @@
   <nav v-if="isLoggedIn">
     <router-link to="/">Nástěnka</router-link> |
     <router-link to="/ukoly">Úkoly</router-link> |
+    <router-link to="/planovani">Plánování</router-link> |
     <router-link to="/dokoncene">Dokončené</router-link> |
     <a href="#" @click.prevent="logout">Odhlásit se</a>
   </nav>
@@ -59,6 +60,7 @@ export default {
   },
   created() {
     this.$store.dispatch("loadAuthToken")
+    setInterval(() => this.$store.dispatch('sync'), 3000)
   }
 }
 </script>
