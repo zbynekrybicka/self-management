@@ -19,9 +19,9 @@ function handleError() {
 }
 
 function checkAuth() {
-  $jwt = apache_request_headers()['Authorization'] ?? false;
+  $jwt = $_SERVER['HTTP_AUTHORIZATION'] ?? false;
   if (!$jwt) {
-    return null;
+    return false;
   }
 
   $jwt = str_replace('Bearer ', '', $jwt);
@@ -29,10 +29,10 @@ function checkAuth() {
     $user = JWT::decode($jwt, new Key(JWT_KEY, 'HS256'));
   } catch (\Exception $e) {
     throw $e;
-    return null;
+    return false;
   }
 
-  return true;
+  return $user->user_id;
 }
 
 $db = new Connection([
@@ -46,6 +46,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT
   $data = null;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'PUT') {
+  $db->update('system', ['hodnota' => time()])->where('polozka = %s', 'posledni_update')->execute();
+}
 
 register_shutdown_function('handleError');
 // Nastavení CORS hlaviček
@@ -56,6 +59,6 @@ header('Content-Type: application/json');
 
 // Pokud je request metoda OPTIONS, vrátí povolené metody
 if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
-  http_response_code(204);
+  http_response_code(200);
   exit();
 }

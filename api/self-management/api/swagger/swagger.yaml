@@ -1,0 +1,615 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: Self-management
+# during dev, should point to your local machine
+host: api.self-management.local
+# basePath prefixes all resource paths 
+basePath: /
+# 
+schemes:
+  # tip: remove http to make production-grade
+  - http
+  - https
+# format of bodies a client can send (Content-Type)
+consumes:
+  - application/json
+# format of the responses to the client (Accepts)
+produces:
+  - application/json
+paths:
+
+  /login:
+    post:
+      description: Processes the request from the login form
+      # used as the method name of the controller
+      # operationId: hello
+      parameters:
+        - name: email
+          in: formData
+          description: E-mail for login
+          required: true
+          type: string
+        - name: password
+          in: formData
+          description: Password
+          required: true
+          type: string
+      responses:
+        "200":
+          description: Login success
+          schema:
+            required:
+              - id
+            properties:
+              id:
+                type: string
+              qrcode:
+                type: string
+              secret:
+                type: string
+
+  /authenticate:
+    post:
+      description: Send code by Google Authenticator
+      
+      parameters:
+        - name: id
+          in: formData
+          description: User ID
+          required: true
+          type: integer
+        - name: code
+          in: formData
+          description: Authentication code from Google Authenticator
+          required: true
+          type: string
+      
+      responses:
+        "200":
+          description: JWT token
+          schema:
+            type: string
+        "400":
+          description: Authentication failed
+          schema:
+            properties:
+              error:
+                type: string
+
+  /all:
+    get:
+      description: Load all application data from API
+      
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+            
+      responses:
+        "200":
+          description: Application data
+            
+
+        "401":
+          description: Unauthorized request
+
+  /ukoly:
+    post:
+      description: Create new task
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+
+        - name: nazev
+          in: formData
+          description: Task title
+          required: true
+          type: string
+          
+        - name: ukol_id
+          in: formData
+          description: Superior Task
+          required: false
+          type: integer
+          
+      responses:
+        "201":
+          description: New Task objectd
+          schema:
+            required:
+              - nazev
+              - uzivatel_id
+              - popis
+              - dokonceno
+              - ukol_id
+              - id
+            properties:
+              nazev:
+                type: string
+              uzivatel_id:
+                type: integer
+              popis:
+                type: string
+              dokonceno:
+                type: 'null'
+              ukol_id:
+                type: integer
+              id:
+                type: integer
+
+        "401":
+          description: Unauthorized request
+        
+      
+    put:
+      description: Edit Task
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+
+        - name: id
+          in: formData
+          description: Task ID
+          required: true
+          type: string
+          
+        - name: nazev
+          in: formData
+          description: Task title
+          required: true
+          type: string
+          
+        - name: popis
+          in: formData
+          description: Task description
+          required: true
+          type: string
+
+          
+      responses:
+        "204":
+          description: Task is updated
+          
+        "401":
+          description: Unauthorized request
+          
+  '/ukoly-dokonceno':
+    put:
+      description: Finish Task
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+
+        - name: id
+          in: formData
+          description: Task ID
+          required: true
+          type: integer
+          
+      
+      responses:
+        "204":
+          description: Task is finished
+
+        "401":
+          description: Unauthorized request
+          
+  '/ukoly-vratit':
+    put:
+      description: Restore finished Task
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+
+        - name: id
+          in: formData
+          description: Task ID
+          required: true
+          type: integer
+          
+      
+      responses:
+        "204":
+          description: Task is restored
+          
+        "401":
+          description: Unauthorized request
+
+
+  '/casy-prepnout':
+    post:
+      description: Stop one Task time and start another Task time
+
+      responses:
+        "201":
+          description: Time is switched
+          schema:
+            required:
+              - novyZacatek
+              - konec
+            properties:
+              novyZacatek:
+                required:
+                  - uzivatel_id
+                  - ukol_id
+                  - zacatek
+                  - konec
+                  - id
+                properties:
+                  uzivatel_id:
+                    type: integer
+                  ukol_id:
+                    type: integer
+                  zacatek:
+                    type: integer
+                  konec:
+                    type: 'null'
+                  id:
+                    type: integer
+              konec:
+                type: integer
+
+        "401":
+          description: Unauthorized request
+
+
+  '/casy-presunout':
+    put:
+      description: Change begin of Task and end of previous Task
+
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+
+        - name: id
+          in: formData
+          description: Time ID
+          required: true
+          type: integer
+
+        - name: minutes
+          in: formData
+          description: Count of minutes
+          required: true
+          type: integer
+
+
+      responses:
+        "204":
+          description: Times is changed.
+          
+        "401":
+          description: Unauthorized request
+
+      
+  
+  '/specificke-ukoly':
+    post:
+      description: Add specific flag to Task for some widgets
+
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+
+        - name: ukol_id
+          in: formData
+          description: Task ID
+          required: true
+          type: integer
+
+        - name: type
+          in: formData
+          description: flag
+          required: true
+          type: string
+
+
+      responses:
+        "204":
+          description: Flag is created
+          
+        "401":
+          description: Unauthorized request
+
+    delete:
+      description: Remove specific flag from Task
+
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+          
+        - name: data
+          in: query
+          description: 'task_id + "-" + type'
+          required: true
+          type: string
+
+
+      responses:
+        "204":
+          description: Flag is removed
+          
+        "401":
+          description: Unauthorized request
+
+  /system:
+    get:
+      description: Get one system variable
+
+      responses:
+        "200":
+          description: Value of variable
+          schema:
+            type: string
+
+        "401":
+          description: Unauthorized request
+
+  
+  /kvoty:
+    post:
+      description: Insert time quote to Task
+      
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+          
+        - name: ukol_id
+          in: formData
+          description: Task ID
+          required: true
+          type: integer
+
+        - name: datum
+          in: formData
+          description: Date
+          required: true
+          type: string
+
+        - name: cas
+          in: formData
+          description: Time in minutes
+          required: true
+          type: integer
+          
+          
+      responses:
+        "201":
+          description: Quote is created
+          schema:
+            required:
+              - ukol_id
+              - datum
+              - cas
+              - uzivatel_id
+              - id
+            properties:
+              ukol_id:
+                type: integer
+              datum:
+                type: string
+                format: 'YYYY-DD-MM'
+              cas:
+                type: integer
+              uzivatel_id:
+                type: integer
+              id:
+                type: integer
+
+        "401":
+          description: Unauthorized request
+                
+
+    delete:
+      description: Remove time quote from Task
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+          
+        - name: id
+          in: query
+          description: Quote ID
+          required: true
+          type: integer
+
+      responses:
+        "204":
+          description: Quote is removed
+      
+      
+
+  '/kvoty-kopiruj':
+    post:
+      description: Copy time quotes from one day to another day
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+
+        - name: zeDne
+          in: formData
+          description: Original day
+          required: true
+          type: string
+          
+        - name: naDen
+          in: formData
+          description: Target day
+          required: true
+          type: string
+          
+      responses:
+        "201":
+          description: New time quotes
+          schema:
+            type: array
+            items:
+              properties:
+                id:
+                  type: integer
+                ukol_id:
+                  type: integer
+                uzivatel_id:
+                  type: integer
+                datum:
+                  type: string
+                cas:
+                  type: integer
+                
+  '/body-kvoty':
+    post:
+      description: Insert score quote to Task
+
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+
+        - name: nazev
+          in: formData
+          description: Quote name
+          required: true
+          type: string
+
+        - name: ukol_id
+          in: formData
+          description: Task ID
+          required: true
+          type: integer
+
+        - name: body
+          in: formData
+          description: Required score
+          required: true
+          type: integer
+
+      responses:
+        "201":
+          description: Quote is created
+          schema:
+            required:
+              - nazev
+              - ukol_id
+              - body
+              - id
+            properties:
+              nazev:
+                type: string
+              ukol_id:
+                type: integer
+              body:
+                type: integer
+              id:
+                type: integer
+
+        "401":
+          description: Unauthorized request
+
+
+  /body:
+    post:
+      description: Insert new score
+
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+
+        - name: body_kvota_id
+          in: formData
+          description: Score quote ID
+          required: true
+          type: integer
+
+        - name: body
+          in: formData
+          description: Score
+          required: true
+          type: integer
+
+      
+      responses:
+        "201":
+          description: Score is created
+          schema:
+            required:
+              - body_kvota_id
+              - body
+              - udeleno
+              - uzivatel_id
+              - id
+            properties:
+              body_kvota_id:
+                type: integer
+              body:
+                type: integer
+              udeleno:
+                type: integer
+              uzivatel_id:
+                type: integer
+              id:
+                type: integer
+
+        "401":
+          description: Unauthorized request
+
+                
+    delete:
+      description: Delete score
+      
+      parameters:
+        - name: Authorization
+          in: header
+          description: Bearer + JWT token
+          required: true
+          type: string
+
+        - name: id
+          in: query
+          description: Score ID
+          required: true
+          type: integer
+
+      responses:
+      
+        "204":
+          description: Score is removed
+          
+        "401":
+          description: Unauthorized request

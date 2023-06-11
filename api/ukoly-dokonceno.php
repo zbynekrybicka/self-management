@@ -2,6 +2,7 @@
 require_once 'vendor/autoload.php';
 require_once 'common.php';
 require_once '_ukoly/zmenitStav.php';
+require_once 'validation.php';
 
 $userId = checkAuth();
 
@@ -9,28 +10,13 @@ if (!$userId) {
     http_response_code(401);
 } else if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     // UPDATE
-    zmenitStav($db, $data->id, 2);
-    $cas = $db->select('*')->from('casy')->where('konec IS NULL AND ukol_id = %u', $data->id)->fetch();
-    if ($cas) {
-        $data = [ 'konec' => time() ];
-        $db->update('casy', $data)->where('id = %u', $cas->id)->execute();
-        $ukol_id = $db->select('ukol_id')->from('specificke_ukoly')->where('typ = %s', 'pauza')->fetchSingle();
-
-        $cas = [
-            'ukol_id' => $ukol_id,
-            'zacatek' => time(),
-            'konec' => null
-        ];
-        $db->insert('casy', $cas)->execute();
-        $cas['id'] = $db->getInsertId();
-        echo json_encode([ 
-            'konec' => $data['konec'], 
-            'novyZacatek' => $cas 
-        ]);
-    } else {
-        echo json_encode(null);
+    if (!maPravoDokoncitUkol($db, $data->id, $userId)) {
+        http_response_code(401);
+        exit;
     }
-    http_response_code(200);
+
+    $db->update('ukoly', [ 'dokonceno' => time() ])->where('id = %u', $data->id)->execute();
+    http_response_code(204);
 } else {
     // INVALID METHOD
     http_response_code(405);

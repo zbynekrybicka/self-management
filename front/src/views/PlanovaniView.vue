@@ -1,7 +1,17 @@
 <template>
     <div>
         <div class="form-group">
-            <input type="date" class="form-control" v-model="den" />
+            <div class="row">
+                <div class="col-12 col-sm-4 text-center" @click="predchoziDen">
+                    <button class="btn btn-light">Předchozí den</button>
+                </div>
+                <div class="col-12 col-sm-4 text-center">
+                    <input type="date" class="form-control" v-model="den" />
+                </div>
+                <div class="col-12 col-sm-4 text-center" @click="nasledujiciDen">
+                    <button class="btn btn-light">Následující den</button>
+                </div>
+            </div>
         </div>
 
         <ul class="list-group">
@@ -67,10 +77,24 @@ export default {
                 naDen: this.naDen
             }).then(() => {
                 this.den = this.naDen
-                const naDen = new Date(this.naDen)
-                naDen.setDate(naDen.getDate() + 1)
-                this.naDen = naDen.toISOString().split('T')[0]
             })
+        },
+        predchoziDen() {
+            const den = new Date(this.den)
+            den.setDate(den.getDate() - 1)
+            this.den = den.toISOString().split('T')[0]
+        },
+        nasledujiciDen() {
+            const den = new Date(this.den)
+            den.setDate(den.getDate() + 1)
+            this.den = den.toISOString().split('T')[0]
+        }
+    },
+    watch: {
+        den(den) {
+            const naDen = new Date(den)
+            naDen.setDate(naDen.getDate() + 1)
+            this.naDen = naDen.toISOString().split('T')[0]
         }
     },
     created() {

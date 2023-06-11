@@ -6,19 +6,34 @@ $userId = checkAuth();
 if (!$userId) {
     http_response_code(401);
 } else {
-    $ukoly = $db->select('*')->from('ukoly')->fetchAll();
-    $stavy = $db->select('id, nazev')->from('stavy')->fetchPairs('id', 'nazev');
-    $casy = $db->select('*')->from('casy')->fetchAll();
-    $prioritniFronta = $db->select('*')->from('prioritni_fronta')->fetchAll();
-    $specifickeUkoly = $db->select('*')->from('specificke_ukoly')->fetchall();
-    $poznamky = $db->select('*')->from('poznamky')->fetchAll();
+    $system = $db->select('polozka, hodnota')->from('system')->where('uzivatel_id = %u', $userId)->fetchPairs('polozka', 'hodnota');
+    $ukoly = $db->select('*')->from('ukoly')->where('uzivatel_id = %u', $userId)->fetchAll();
 
-    echo json_encode([ 
+    $ukolyIds = array_map(function ($ukol) {
+        return $ukol->id;
+    }, $ukoly);
+
+    $casy = $db->select('*')->from('casy')->where("ukol_id IN %in", $ukolyIds)->fetchAll();
+    $specifickeUkoly = $db->select('*')->from('specificke_ukoly')->where("ukol_id IN %in", $ukolyIds)->fetchall();
+    $poznamky = $db->select('*')->from('poznamky')->where("ukol_id IN %in", $ukolyIds)->fetchAll();
+    $kvoty = $db->select('*')->from('kvoty')->where("ukol_id IN %in", $ukolyIds)->fetchAll();
+
+    $bodyKvoty = $db->select('*')->from('body_kvoty')->where("ukol_id IN %in", $ukolyIds)->fetchAll();
+    $bodyKvotyIds = array_map(function ($kvota) {
+        return $kvota->id;
+    }, $bodyKvoty);
+    $body = $db->select('*')->from('body')->where('body_kvota_id IN %in', $bodyKvotyIds)->fetchAll();
+
+    echo json_encode([
+        'uzivatel_id' => $userId,
+        'system' => $system,
         'ukoly' => $ukoly,
         'stavy' => $stavy,
         'casy' => $casy,
-        'prioritni_fronta' => $prioritniFronta,
         'specificke_ukoly' => $specifickeUkoly,
-        'poznamky' => $poznamky
+        'poznamky' => $poznamky,
+        'kvoty' => $kvoty,
+        'body_kvoty' => $bodyKvoty,
+        'body' => $body
     ]);
 }

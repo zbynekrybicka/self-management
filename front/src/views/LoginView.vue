@@ -1,18 +1,31 @@
 <template>
-    <div class="container">
-        <h1 class="text-center">Přihlášení</h1>
-        <div class="form-group">
-            <input type="text" class="form-control" placeholder="Zadejte kód..." @change="authenticate" />
+    <div>
+        <div v-if="form === 'loginForm'">
+            <Login v-if="!userId" @goto="form=$event" />
+            <Autenticate v-if="userId" />
+        </div>
+
+        <div v-if="form === 'registrationForm'">
+            <Registration @goto="form=$event" />
         </div>
     </div>
-</template>
-<script>
+  </template>
+  
+  <script>
+import Autenticate from '@/components/Autenticate.vue';
+import Login from '@/components/Login.vue';
+import Registration from '@/components/Registration.vue';
+
 export default {
     name: "LoginView",
-    methods: {
-        authenticate(e) {
-            this.$store.dispatch("authenticate", e.target.value)
+    data: () => ({
+        form: "loginForm"
+    }),
+    computed: {
+        userId() {
+            return this.$store.getters.authenticationData?.id
         }
-    }
+    },
+    components: { Login, Autenticate, Registration }
 }
 </script>

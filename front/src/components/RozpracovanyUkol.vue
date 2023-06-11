@@ -30,7 +30,7 @@ export default {
             return this.$store.getters.casyByUkolId(this.rozpracovanyUkol.id);
         },
         casUkolu() {
-            this.seconds;
+            this.seconds
             let ts = this.casy.find(c => c.konec === null).zacatek;
             let zacatek = new Date(ts * 1000);
             let now = new Date();
@@ -38,6 +38,7 @@ export default {
             return Math.floor(rozdil / 3600) + ":" + (Math.floor(rozdil / 60 % 60) + "").padStart(2, "0") + ":" + (Math.floor(rozdil % 60) + "").padStart(2, "0");
         },
         progress() {
+            this.seconds
             const plan = this.$store.getters.plan().find(p => p.ukol_id === this.rozpracovanyUkol.id)
             return plan ? plan.splneno + "%" : "0%"
         }

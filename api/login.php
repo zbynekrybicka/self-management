@@ -3,7 +3,24 @@ require_once 'vendor/autoload.php';
 require_once 'common.php';
 require_once 'GoogleAuthenticator/PHPGangsta/GoogleAuthenticator.php';
 
-$ga = new PHPGangsta_GoogleAuthenticator();
-$secret = $ga->createSecret();  
-$qrCodeUrl = $ga->getQRCodeGoogleUrl('ZbynekRybicka.cz/bozi-slovo', $secret);
-echo json_encode([$qrCodeUrl, $secret]);
+$email = $data->email;
+$password = $data->password;
+
+$row = $db->select('id, heslo, google_authenticator_id')->from('uzivatele')->where('email = %s', $email)->fetch();
+
+if (!$row) {
+    http_response_code(400);
+    echo json_encode('Přihlášení se nezdařilo. Uživatel neexistuje.');
+} else if (!password_verify($password, $row->heslo)) {
+    http_response_code(400);
+    echo json_encode('Přihlášení se nezdařilo. Chybné heslo.');
+} else {
+  if ($row->google_authenticator_id) {
+    echo json_encode([ 'id' => $row->id ]);
+  } else {
+    $ga = new PHPGangsta_GoogleAuthenticator();
+    $secret = $ga->createSecret();  
+    $qrCodeUrl = $ga->getQRCodeGoogleUrl('ZbynekRybicka.cz-Self-management', $secret);
+    echo json_encode([ 'id' => $row->id, 'qrcode' => $qrCodeUrl, 'secret' => $secret ]);
+  }
+}

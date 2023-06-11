@@ -14,12 +14,25 @@ export default createStore({
     success: false,
     error: false,
     data: null,
+    mojeZmena: false,
+    authenticationData: null,
     filtrace: {
       zacatek: dnes(0, 0, 0, 0),
       konec: dnes(23, 59, 0, 0),
     }
   },
   getters: {
+    authenticationData(state) {
+      return state.authenticationData
+    },
+    pocetPodukolu: (state, getters) => id => {
+      const ukoly = state.data.ukoly.filter(u => u.ukol_id === id && u.dokonceno === null && u.uzivatel_id)
+      let pocet = ukoly.length
+      for (const ukol of ukoly) {
+        pocet += getters.pocetPodukolu(ukol.id)
+      }
+      return pocet
+    },
     nazev: state => (ukol, oddelovac) => {
         let nazev = [];
         while (ukol) {
@@ -31,8 +44,9 @@ export default createStore({
     kvotyByUkolId: state => id => {
       return state.data.kvoty.filter(k => k.ukol_id === id).sort((a, b) => a.datum > b.datum ? 1 : 0)
     },
-    plan: (state, getters) => (den = null) => {
-      const kvoty = state.data.kvoty.filter(k => {
+    plan: state => (den = null) => {
+      const kvoty = state.data.kvoty
+      .filter(k => {
         if (den) {
           return den === k.datum
         } else {
@@ -126,8 +140,14 @@ export default createStore({
       return ukol
     },
     dokonceneUkoly(state) {
-      return state.data.ukoly.filter(u => u.stav_id === 2)
+      return state.data.ukoly.filter(u => u.dokonceno && u.dokonceno !== 1000)
     },  
+    skupinaByUkolId: state => ukol => {
+      while (ukol.ukol_id !== null) {
+        ukol = state.data.ukoly.find(u => u.id === ukol.ukol_id)
+      }
+      return ukol      
+    },
     skupiny(state) {
       return state.data.ukoly.filter(u => u.ukol_id === null)
     },
@@ -137,19 +157,11 @@ export default createStore({
     prvniCas(state) {
       return state.data.casy.find(c => c.zacatek)
     },
-    ukolyVeFronte(state, getters) {
+    ukolyVeFronte(state) {
       if (state.data) {
-        const fronta = [
-          ...state.data.prioritni_fronta
-            .filter(pf => state.data.ukoly.find(u => u.stav_id === 1 && pf.ukol_id === u.id))
-            .map(u => u.ukol_id), 
-          
-          // ...getters.casNaUkolech
-          //   .filter(c => c.cas.match(/[0-9]+:[0-9]+:[0-9]+:[0-9]+/))
-          //   .map(u => u.id)
-        ]
-        return Array.from(new Set(fronta)).map(id => state.data.ukoly.find(u => id === u.id))
-          .filter(u => u.ukol_id !== null)
+        const fronta = state.data.specificke_ukoly.filter(su => su.typ === "prioritni").map(su => su.ukol_id)
+        return Array.from(new Set(fronta)).map(id => state.data.ukoly.find(u => id === u.id && !u.dokonceno))
+          .filter(u => u && u.ukol_id !== null)
           .reverse()
         
       } else {
@@ -252,14 +264,18 @@ export default createStore({
     vybranyUkol: (state) => (id) => {
       return state.data.ukoly.find(u => u.id === id)
     },
-    ukolyByUkolId: (state) => (id, stav = 1) => {
-      return state.data.ukoly.filter(u => u.ukol_id === id && u.stav_id === stav)
+    ukolyByUkolId: (state) => (id, dokonceno = false) => {
+      return state.data.ukoly.filter(u => u.ukol_id === id && !!u.dokonceno === dokonceno)
     },
     isLoggedIn(state) {
       return !!state.authToken && !!state.data
     }
   },  
   mutations: {
+    putUkolVratit(state, id) {
+      const ukol = state.data.ukoly.find(u => u.id === id)
+      ukol.dokonceno = null
+    },
     postKvotyKopiruj(state, kvoty) {
       state.data.kvoty = [...state.data.kvoty, ...kvoty]
     },
@@ -294,13 +310,6 @@ export default createStore({
         state.filtrace.zacatek = new Date(filtrace.zacatek)
         state.filtrace.konec = new Date(filtrace.konec)
     },
-    deletePrioritniFronta(state, id) {
-      const index = state.data.prioritni_fronta.findIndex(pf => pf.ukol_id === id)
-      state.data.prioritni_fronta.splice(index, 1)
-    },
-    postPrioritniFronta(state, data) {
-      state.data.prioritni_fronta.push(data)
-    },
     postPrepnoutUkol(state, data) {
       let cas = state.data.casy.find(c => c.konec === null)
       cas.konec = data.konec
@@ -308,11 +317,7 @@ export default createStore({
     },
     putUkolyDokonceno(state, id) {
       let ukol = state.data.ukoly.find(u => u.id === id)
-      ukol.stav_id = 2
-    },
-    putUkolyZruseno(state, id) {
-      let ukol = state.data.ukoly.find(u => u.id === id)
-      ukol.stav_id = 3
+      ukol.dokonceno = Math.floor(new Date().getTime() / 1000)
     },
     postCasy(state, data) {
       state.data.casy.push(data)
@@ -334,6 +339,11 @@ export default createStore({
     success(state, status) {
       setTimeout(() => state.success = false, 3000)
       state.success = status
+      state.mojeZmena = true
+    },
+    casoveRazitko(state, posledni_update) {
+      state.data.system.posledni_update = posledni_update
+      state.mojeZmena = false
     },
     setError(state, status) {
       setTimeout(() => state.error = false, 3000)
@@ -342,12 +352,32 @@ export default createStore({
     setLoading(state, isLoading) {
       state.preloader = isLoading
     },
+    setAuthenticationData(state, authenticationData) {
+      state.authenticationData = authenticationData
+    },
     authenticate(state, authToken) {
       localStorage.setItem('self-management-authToken', authToken)
       state.authToken = authToken
     }
   },
   actions: {
+    putUkolVratit({ commit, state }, { id }) {
+      commit('setLoading', true)
+      return axios
+        .put(window.API_URL + '/ukoly-vratit', { id }, { headers: { Authorization: `Bearer ${state.authToken}` }})
+        .then((response) => {
+          commit("putUkolVratit", id)
+          commit("success", response.status)
+          return id
+        })
+        .catch((error) => {
+          console.error(error)
+          commit("setError", error.response.status)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
     postKvotyKopiruj({ commit, state }, data) {
       commit('setLoading', true)
       return axios
@@ -467,38 +497,6 @@ export default createStore({
         .then((response) => {
           commit("putUkolPresunout", data)
           commit("success", response.status)
-        })
-        .catch((error) => {
-          console.error(error)
-          commit("setError", error.response.status)
-        })
-        .finally(() => {
-          commit('setLoading', false)
-        })
-    },
-    deletePrioritniFronta({ commit, state }, ukol) {
-      commit('setLoading', true)
-      return axios
-        .delete(window.API_URL + '/prioritni-fronta/' + ukol.id, { headers: { Authorization: `Bearer ${state.authToken}` }})
-        .then((response) => {
-          commit("success", response.status)
-          commit("deletePrioritniFronta", ukol.id)
-        })
-        .catch((error) => {
-          console.error(error)
-          commit("setError", error.response.status)
-        })
-        .finally(() => {
-          commit('setLoading', false)
-        })
-    },
-    postPrioritniFronta({ commit, state }, ukol) {
-      commit('setLoading', true)
-      return axios
-        .post(window.API_URL + '/prioritni-fronta', { id: ukol.id }, { headers: { Authorization: `Bearer ${state.authToken}` }})
-        .then((response) => {
-          commit("success", response.status)
-          commit("postPrioritniFronta", response.data)
         })
         .catch((error) => {
           console.error(error)
@@ -633,18 +631,51 @@ export default createStore({
           commit("setError", "POZOR! Nemáš aktuální data.")
         })
     },
-    authenticate({ commit, dispatch }, code) {
+    login({ commit }, { email, password }) {
       commit('setLoading', true)
       return axios
-        .post(window.API_URL + '/authenticate', { code })
+        .post(window.API_URL + '/login', { email, password })
         .then((response) => {
-          commit("authenticate", response.data)
-          commit("success", response.status)
-          dispatch("getAll")
+          commit('setAuthenticationData', response.data)
+          commit("success")
         })
         .catch((error) => {
           console.error(error)
-          commit("setError", error.response.status)
+          alert(error.response.data)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
+    authenticate({ commit, dispatch, state }, code) {
+      commit('setLoading', true)
+      return axios
+        .post(window.API_URL + '/authenticate', { code, ...state.authenticationData })
+        .then((response) => {
+          commit('authenticate', response.data)
+          commit("success")
+          dispatch('getAll')
+        })
+        .catch((error) => {
+          console.error(error)
+          alert(error.response.data)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
+    register({ commit, dispatch }, data) {
+      commit('setLoading', true)
+      return axios
+        .post(window.API_URL + '/register', data)
+        .then((response) => {
+          commit('register', response.data)
+          commit("success")
+          dispatch('getAll')
+        })
+        .catch((error) => {
+          console.error(error)
+          alert(error.response.data)
         })
         .finally(() => {
           commit('setLoading', false)
@@ -657,13 +688,17 @@ export default createStore({
         dispatch("getAll")
       }
     },
-    sync({ state, dispatch }) {
-      return axios.get(window.API_URL + '/system/posledni_update', { headers: { Authorization: `Bearer ${state.authToken}` }} )
-      .then((response) => {
-        if (state.data.system.posledni_update !== response.data) {
-          dispatch("getAll")
-        }      
-      })
+    sync({ state, dispatch, getters, commit }) {
+      if (getters.isLoggedIn) {
+        return axios.get(window.API_URL + '/system/posledni_update', { headers: { Authorization: `Bearer ${state.authToken}` }} )
+          .then((response) => {
+            if (state.data.system.posledni_update !== response.data && !state.mojeZmena) {
+              dispatch("getAll")
+            } else if (state.mojeZmena) {
+              commit("casoveRazitko", response.data)          
+            }
+          })
+      }
   }
   },
   modules: {

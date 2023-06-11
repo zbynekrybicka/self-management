@@ -12,13 +12,14 @@
                         {{ ukol.nazev }}
                     </div>
                     <div class="col-12 col-sm-6 col-md-4" v-html="casyNaUkolech.find(x => x.id === ukol.id).cas" />
-                    <div class="col-12 col-md-4 text-right" v-if="ukol.ukol_id !== null">
+                    <div class="col-12 col-md-3 text-right" v-if="ukol.ukol_id !== null">
                         <a href="#" class="text-primary" v-if="!jeVeFronte(ukol)" @click.prevent.stop="pridatDoFronty(ukol)">Přidat do fronty</a>
                         <a href="#" class="text-danger" v-if="jeVeFronte(ukol)" @click.prevent.stop="odebratZFronty(ukol)">Odebrat z fronty</a>
                         <a href="#" class="text-primary ml-2" @click.prevent.stop="zacitSPraci(ukol)">Začít</a>
+                        
                     </div>
+                    <div class="col-12 col-md-1 text-right" v-if="podrizeneUkoly(ukol.id).length">{{ pocetPodukolu(ukol.id) }}</div>
                 </div>
-
             </a>
             <SeznamUkolu :id="ukol.id" v-if="rozbalenySeznam[index]" :rozbaleno="false" :root="false" />
         </li>
@@ -64,10 +65,13 @@ export default {
             return this.$store.getters.ukolyVeFronte.includes(ukol)
         },
         pridatDoFronty(ukol) {
-            this.$store.dispatch('postPrioritniFronta', ukol)
+            this.$store.dispatch('postSpecifickeUkoly', { ukol_id: ukol.id, typ: "prioritni" })
         },
         odebratZFronty(ukol) {
-            this.$store.dispatch('deletePrioritniFronta', ukol)
+            this.$store.dispatch('deleteSpecifickeUkoly', { ukol_id: ukol.id, typ: "prioritni" })
+        },
+        pocetPodukolu(id) {
+            return this.$store.getters.pocetPodukolu(id)
         }
     },
     mounted() {

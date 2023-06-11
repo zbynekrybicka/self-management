@@ -5,6 +5,33 @@
     <h3 class="font-weight-bold" v-if="vybranyUkol" v-html="nazev" />
 
     <div v-if="vybranyUkol">
+      <div class="form-inline">
+        <div class="mr-2 mb-2">
+          <button class="btn btn-primary" @click="zacitSPraci">Začít</button>
+        </div>
+        <div class="mr-2 mb-2">
+          <button class="btn btn-success" @click="dokonceno">Dokončeno</button>
+        </div>
+        <div class="mr-2 mb-2" v-if="!jeVeFronte && !!vybranyUkol.ukol_id">
+          <button class="btn btn-primary" @click="pridatDoFronty">Přidat do fronty</button>
+        </div>
+        <div class="mr-2 mb-2" v-if="jeVeFronte && !!vybranyUkol.ukol_id">
+          <button class="btn btn-danger" @click="odebratZFronty">Odebrat z fronty</button>
+        </div>
+        <div class="mr-2 mb-2" v-if="!jeRutina && !!vybranyUkol.ukol_id">
+          <button class="btn btn-primary" @click="oznacitZaRutinu">Označit jako rutinu</button>
+        </div>
+        <div class="mr-2 mb-2" v-if="jeRutina && !!vybranyUkol.ukol_id">
+          <button class="btn btn-danger" @click="zrusitRutinu">Zrušit rutinu</button>
+        </div>
+        <div class="mr-2 mb-2">
+          <button class="btn btn-primary" @click="presunoutUkol = true">Přesunout</button>
+        </div>
+        <div class="mr-2 mb-2">
+          <button class="btn btn-primary" @click="prevestNaProjekt">Převést na projekt</button>
+        </div>
+      </div>
+      
       <div class="form-group">
         <input class="form-control" type="text" v-model="vybranyUkol.nazev" @change="ulozitPopis"/>
       </div>
@@ -55,35 +82,6 @@
 
       <!--h6 class="font-weight-bold mt-5 mb-4 text-center">Body</h6-->
 
-      <div class="form-inline">
-        <div class="mr-2 mb-2">
-          <button class="btn btn-primary" @click="zacitSPraci">Začít</button>
-        </div>
-        <div class="mr-2 mb-2">
-          <button class="btn btn-success" @click="dokonceno">Dokončeno</button>
-        </div>
-        <div class="mr-2 mb-2">
-          <button class="btn btn-danger" @click="zrusit">Zrušit</button>
-        </div>
-        <div class="mr-2 mb-2" v-if="!jeVeFronte">
-          <button class="btn btn-primary" @click="pridatDoFronty">Přidat do fronty</button>
-        </div>
-        <div class="mr-2 mb-2" v-if="jeVeFronte">
-          <button class="btn btn-danger" @click="odebratZFronty">Odebrat z fronty</button>
-        </div>
-        <div class="mr-2 mb-2">
-          <button class="btn btn-primary" @click="presunoutUkol = true">Přesunout</button>
-        </div>
-        <div class="mr-2 mb-2">
-          <button class="btn btn-primary" @click="prevestNaProjekt">Převést na projekt</button>
-        </div>
-        <div class="mr-2 mb-2" v-if="!jeRutina">
-          <button class="btn btn-primary" @click="oznacitZaRutinu">Označit jako rutinu</button>
-        </div>
-        <div class="mr-2 mb-2" v-if="jeRutina">
-          <button class="btn btn-danger" @click="zrusitRutinu">Zrušit rutinu</button>
-        </div>
-      </div>
     </div>
 
     <hr v-if="vybranyUkol" />
@@ -152,7 +150,6 @@ export default {
       }
     },
     pridatKvotu(e) {
-      console.log(e)
       if (e.target.value > 0) {
         this.$store.dispatch('postKvoty', {
           ukol_id: this.id,
@@ -194,22 +191,16 @@ export default {
         this.$router.push('/ukoly/' + (ukol_id ? ukol_id : ''))
       })
     },
-    zrusit() {
-      this.$store.dispatch('putUkolyZruseno', this.id).then(() => {
-        let ukol_id = this.vybranyUkol.ukol_id
-        this.$router.push('/ukoly/' + (ukol_id ? ukol_id : ''))
-      })
-    },
     prejdiNaNovyProjekt() {
       if (!this.vybranyUkol) {
         this.vybranyProjekt = this.projekty.length
       }
     },
     pridatDoFronty() {
-      this.$store.dispatch('postPrioritniFronta', this.vybranyUkol)
+      this.$store.dispatch('postSpecifickeUkoly', { ukol_id: this.vybranyUkol.id, typ: "prioritni" })
     },
     odebratZFronty() {
-      this.$store.dispatch('deletePrioritniFronta', this.vybranyUkol)
+      this.$store.dispatch('deleteSpecifickeUkoly', { ukol_id: this.vybranyUkol.id, typ: "prioritni" })
     },
     prevestNaProjekt() {
       this.$store.dispatch('putUkolPresunout', { 
