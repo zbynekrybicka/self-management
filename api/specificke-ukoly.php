@@ -21,7 +21,7 @@ if (!$userId) {
         exit;
     }
 
-    if (!maPravoPracovatNaUkolu($values['ukol_id'], $userId)) {
+    if (!maPravoPracovatNaUkolu($db, $values['ukol_id'], $userId)) {
         http_response_code(401);
         exit;
     }
@@ -47,6 +47,13 @@ if (!$userId) {
         echo json_encode($values);
         exit;
     }
+
+    if (!maPravoPracovatNaUkolu($db, $values['ukol_id'], $userId)) {
+        http_response_code(401);
+        exit;
+    }
+
+    $values['uzivatel_id'] = $userId;
 
     $db->delete('specificke_ukoly')->where($values)->execute();
     http_response_code(204);
