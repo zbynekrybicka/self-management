@@ -53,8 +53,3 @@
     }
   }
   </script>
-  
-  <style scoped>
-  /* Styly pro komponentu Login.vue */
-  </style>
-  
