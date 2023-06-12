@@ -69,7 +69,7 @@ export default {
             return nazevArr.reverse().join(' &ndash; ')
         },
         gotoUkol(ukol) {
-            this.$router.push('/ukoly/' + ukol.id)
+            this.$router.push('/' + ukol.id)
         },
         kopiruj() {
             this.$store.dispatch('postKvotyKopiruj', {

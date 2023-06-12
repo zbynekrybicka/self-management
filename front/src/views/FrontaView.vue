@@ -125,7 +125,7 @@ export default {
             return nazevArr.reverse().join(' &ndash; ')
         },
         vyberUkol(ukol) {
-            this.$router.push('/ukoly/' + ukol.id)
+            this.$router.push('/' + ukol.id)
         },
         odebratZFronty(ukol) {
             this.$store.dispatch('deletePrioritniFronta', ukol)

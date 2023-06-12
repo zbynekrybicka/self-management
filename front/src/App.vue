@@ -1,23 +1,23 @@
 <template>
-  <div class="fixed font-weight-bold" v-if="preloader">***</div>
-  <div class="fixed font-weight-bold text-success" v-if="success">{{ success }}</div>
-  <div class="fixed font-weight-bold text-danger" v-if="error">{{ error }}</div>
-  <nav v-if="isLoggedIn">
-    <router-link to="/">Nástěnka</router-link> |
-    <router-link to="/ukoly">Úkoly</router-link> |
-    <router-link to="/planovani">Plánování</router-link> |
-    <router-link to="/dokoncene">Dokončené</router-link> |
-    <a href="#" @click.prevent="logout">Odhlásit se</a>
-  </nav>
-  <div class="container" v-if="isLoggedIn">    
-    <RozpracovanyUkol v-if="rozpracovanyUkol" />
-    <FiltracePodleCasu />
-    <router-view/>
-    <h4 v-if="prvniCas" class="text-center cursor-arrow mt-5">Již od <b>{{ prvniCas }}</b></h4>
+  <div>
+    <div class="fixed font-weight-bold" v-if="preloader">***</div>
+    <div class="fixed font-weight-bold text-success" v-if="success">{{ success }}</div>
+    <div class="fixed font-weight-bold text-danger" v-if="error">{{ error }}</div>
+    <nav v-if="isLoggedIn">
+      <router-link to="/">Úkoly</router-link> |
+      <router-link to="/dokoncene">Dokončené</router-link> |
+      <a href="#" @click.prevent="logout">Odhlásit se</a>
+    </nav>
+    <div class="container" v-if="isLoggedIn">    
+      <RozpracovanyUkol v-if="rozpracovanyUkol && muzeEvidovatCasy" />
+      <FiltracePodleCasu v-if="muzeFiltrovatCasy" />
+      <router-view/>
+      <h4 v-if="prvniCas" class="text-center cursor-arrow mt-5">Již od <b>{{ prvniCas }}</b></h4>
+    </div>
+    <div class="container" v-if="!isLoggedIn">
+      <LoginView />
+    </div>  
   </div>
-  <div class="container" v-if="!isLoggedIn">
-    <LoginView />
-  </div>  
 </template>
 <script>
 import LoginView from './views/LoginView.vue'
@@ -28,6 +28,12 @@ export default {
   name: "App",
   components: { LoginView, RozpracovanyUkol, FiltracePodleCasu },
   computed: {
+    muzeEvidovatCasy() {
+      return this.$store.getters.isAdmin
+    },
+    muzeFiltrovatCasy() {
+      return this.$store.getters.isAdmin
+    },
     isLoggedIn() {
       return this.$store.getters.isLoggedIn
     },

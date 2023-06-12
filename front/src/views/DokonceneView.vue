@@ -16,7 +16,7 @@ export default {
     computed: {
         ukoly() {
             const ukoly = this.$store.getters.dokonceneUkoly
-                .sort((a, b) => (a.dokonceno + "-" + a.id) > (b.dokonceno + "-" + b.id) ? 1 : -1)
+                .sort((a, b) => (a.dokonceno + "-" + a.id) < (b.dokonceno + "-" + b.id) ? 1 : -1)
             console.log(ukoly)
             return ukoly
         },
@@ -30,7 +30,7 @@ export default {
         },
         vratitDoPrace(ukol) {
             this.$store.dispatch("putUkolVratit", ukol).then(id => {
-                this.$router.push('/ukoly/' + id)
+                this.$router.push('/' + id)
             })
         }
     },

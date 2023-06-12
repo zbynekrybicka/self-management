@@ -9,12 +9,12 @@ if (!$userId) {
     http_response_code(401);
 } else if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     // UPDATE
-    if (!maPravoEditovatUkol($data->ukol_id, $userId)) {
+    if (!maPravoEditovatUkol($db, $data->ukol_id, $userId)) {
         http_response_code(401);
         exit;
     }
 
-    if (!maPravoEditovatUkol($data->id, $userId)) {
+    if (!maPravoEditovatUkol($db, $data->id, $userId)) {
         http_response_code(401);
         exit;
     }

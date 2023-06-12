@@ -1,24 +1,23 @@
 <template>
     <ul :class="root ? 'list-group' : ''">
-        <li class="list-group-item list-group-item-action" v-if="id && vybranyUkol && vybranyUkol.id === id" @click="vybratUkol(vybranyUkol.ukol_id)">^O úroveň výš</li>
+        <li class="list-group-item list-group-item-action list-group-item-warning" v-if="id && vybranyUkol && vybranyUkol.id === id" @click="vybratUkol(vybranyUkol.ukol_id)">&lt;&lt;&lt;</li>
         <li v-for="(ukol, index) of ukoly" :key="ukol.id">
             <a class="list-group-item list-group-item-action" @click.prevent="vybratUkol(ukol.id)" :class="rozpracovanyUkol.id === ukol.id ? 'list-group-item-primary' : ''">
                 <div class="row">
-                    <div class="col-12 col-sm-6 col-md-4">
+                    <div class="col-12" :class="muzeEvidovatCasy ? 'col-sm-5' : 'col-sm-11'">
                         <span class="badge badge-primary" 
                             @click.stop="rozbalenySeznam[index] = !rozbalenySeznam[index]"
                             v-if="podrizeneUkoly(ukol.id).length"
                             >{{ rozbalenySeznam[index] ? '&ndash;' : '+' }}</span>
                         {{ ukol.nazev }}
                     </div>
-                    <div class="col-12 col-sm-6 col-md-4" v-html="casyNaUkolech.find(x => x.id === ukol.id).cas" />
-                    <div class="col-12 col-md-3 text-right" v-if="ukol.ukol_id !== null">
-                        <a href="#" class="text-primary" v-if="!jeVeFronte(ukol)" @click.prevent.stop="pridatDoFronty(ukol)">Přidat do fronty</a>
-                        <a href="#" class="text-danger" v-if="jeVeFronte(ukol)" @click.prevent.stop="odebratZFronty(ukol)">Odebrat z fronty</a>
-                        <a href="#" class="text-primary ml-2" @click.prevent.stop="zacitSPraci(ukol)">Začít</a>
-                        
+
+                    <div class="col-12" :class="ukol.ukol_id !== null ? 'col-sm-4' : 'col-sm-5'" v-html="casyNaUkolech.find(x => x.id === ukol.id).cas" v-if="muzeEvidovatCasy" />
+                    <div class="col-12 col-sm-2 text-right" v-if="ukol.ukol_id !== null && muzeEvidovatCasy">
+                        <a href="#" class="text-primary" @click.prevent.stop="zacitSPraci(ukol)">Začít</a>                        
                     </div>
-                    <div class="col-12 col-md-1 text-right" v-if="podrizeneUkoly(ukol.id).length">{{ pocetPodukolu(ukol.id) }}</div>
+
+                    <div class="col-12 col-sm-1 text-right"  v-if="podrizeneUkoly(ukol.id).length">{{ pocetPodukolu(ukol.id) }}</div>
                 </div>
             </a>
             <SeznamUkolu :id="ukol.id" v-if="rozbalenySeznam[index]" :rozbaleno="false" :root="false" />
@@ -38,6 +37,9 @@ export default {
         root: { required: false, default: false }
     },
     computed: {
+        muzeEvidovatCasy() {
+            return this.$store.getters.isAdmin
+        },
         ukoly() {
             return this.podrizeneUkoly(this.id)
         },
@@ -56,7 +58,7 @@ export default {
             return this.$store.getters.ukolyByUkolId(id)
         },  
         vybratUkol(id) {
-            this.$router.push('/ukoly/' + (id ? id : ''));
+            this.$router.push('/' + (id ? id : ''));
         },
         zacitSPraci(ukol) {
             this.$store.dispatch('postPrepnoutUkol', ukol)
