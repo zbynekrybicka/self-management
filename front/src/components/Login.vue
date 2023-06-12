@@ -1,5 +1,5 @@
 <template>
-    <div class="container mt-5">
+    <div class="container pt-4">
       <div class="row justify-content-center">
         <div class="col-md-6">
           <div class="card">
@@ -19,7 +19,9 @@
                 <button class="btn btn-primary" @click="login">{{ submitLabel }}</button>
             </div>
           </div>
-          <a href="#" @click="$emit('goto', 'registrationForm')">Nemáte účet? Zde se můžete zaregistrovat</a>
+          <div class="mt-2 text-center">
+            <a href="#" @click="$emit('goto', 'registrationForm')">Nemáte účet? Zde se můžete zaregistrovat</a>
+          </div>
         </div>
       </div>
     </div>

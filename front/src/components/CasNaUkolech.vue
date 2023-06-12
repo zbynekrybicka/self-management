@@ -44,7 +44,7 @@ export default {
             }
         },
         vyberUkol(id) {
-            this.$router.push('/' + id)
+            this.$router.push('/ukoly/' + id)
         }
     }
 }

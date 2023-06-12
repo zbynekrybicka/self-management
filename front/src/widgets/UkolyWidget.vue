@@ -1,7 +1,5 @@
 <template>
   <div>
-    <h5 class="font-weight-bold mt-5 mb-4 text-center">Úkoly</h5>
-
     <h3 class="font-weight-bold" v-if="vybranyUkol" v-html="nazev" />
 
     <div v-if="vybranyUkol">
@@ -206,7 +204,7 @@ export default {
     dokonceno() {
       this.$store.dispatch('putUkolyDokonceno', this.id).then(() => {
         let ukol_id = this.vybranyUkol.ukol_id
-        this.$router.push('/' + (ukol_id ? ukol_id : ''))
+        this.$router.push('/ukoly/' + (ukol_id ? ukol_id : ''))
       })
     },
     prejdiNaNovyProjekt() {

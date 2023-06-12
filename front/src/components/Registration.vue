@@ -1,5 +1,5 @@
 <template>
-    <div class="container mt-5">
+    <div class="container pt-4">
       <div class="row justify-content-center">
         <div class="col-md-6">
           <div class="card">
@@ -7,7 +7,7 @@
   
             <div class="card-body">
                 <div class="form-group">
-                  <label for="email">E-mail</label>
+                  <label for="email">E-mailová adresa</label>
                   <input type="email" name="email" id="email" class="form-control" v-model="email" required autofocus @keyup.enter="login">
                 </div>
   
@@ -21,7 +21,9 @@
                 <button class="btn btn-primary mt-2" @click="register">Registrovat</button>
             </div>
           </div>
-          <a href="#" @click="$emit('goto', 'registrationForm')">Přihlásit se</a>
+          <div class="mt-2 text-center">
+            <a href="#" @click="$emit('goto', 'loginForm')">Přihlásit se</a>
+          </div>
         </div>
       </div>
     </div>

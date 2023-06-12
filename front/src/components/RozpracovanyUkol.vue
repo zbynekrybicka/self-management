@@ -53,7 +53,7 @@ export default {
             return nazev.reverse().join("<br />");
         },
         vyberUkol(ukol) {
-            this.$router.push('/' + ukol.id)
+            this.$router.push('/ukoly/' + ukol.id)
         }
     },
     mounted() {

@@ -1,9 +1,8 @@
 <template>
     <div>
         <h5 class="font-weight-bold mt-5 mb-4 text-center">Plnění plánu</h5>
-
         <ul class="list-group">
-            <li v-for="p of plan" class="list-group-item list-group-item-action font-weight-bold" @click.prevent="zacitSPraci(p.ukol)" :style="{ background: p.progresbar } ">
+            <li v-for="p of plan" :key="p.ukol.id" class="list-group-item list-group-item-action font-weight-bold" @click.prevent="zacitSPraci(p.ukol)" :style="{ background: p.progresbar } ">
                 <div class="row">
                     <div class="col-12 col-sm-10" v-html="nazev(p.ukol, true)"></div>
                     <div class="col-12 col-sm-2 text-right">{{ p.odpracovano }}/{{ p.cas }}</div>
@@ -26,9 +25,8 @@
         </ul>
 
         <h5 class="font-weight-bold mt-5 mb-4 text-center">Mimo práci</h5>
-
         <ul class="list-group">
-            <li v-for="ukol of rutina" 
+            <li v-for="ukol of rutina" :key="ukol.id" 
                 class="list-group-item list-group-item-action font-weight-bold" 
                 :class="rozpracovanyUkol.id === ukol.id ? 'list-group-item-primary' : ''"
                 @click.prevent="zacitSPraci(ukol)" 
@@ -37,12 +35,11 @@
 
 
         <h5 class="font-weight-bold mt-5 mb-4 text-center">Statistika</h5>
-
         <ul class="list-group">
             <li v-for="skupina of skupiny.filter(s => casNaUkolech.find(c => c.id === s.id).cas.match(/[0-9]+:[0-9]+:[0-9]+:[0-9]+/))" 
                     class="list-group-item list-group-item-action" @click="vyberUkol(skupina)"
                     :class="rozpracovanaSkupina.id === skupina.id ? 'list-group-item-primary' : ''"
-                    >
+                    :key="skupina.id">
                 <div class="row">
                     <div class="col-12 col-sm-9">{{ skupina.nazev }}</div>
                     <div class="col-12 col-sm-3 text-right" v-html="casNaUkolech.find(c => c.id === skupina.id).cas" />
@@ -52,9 +49,8 @@
 
 
         <h5 class="font-weight-bold mt-5 mb-4 text-center">Zpracované úkoly</h5>
-
         <ul class="list-group">
-            <li v-for="cas of ukolyPodleCasu" class="list-group-item">
+            <li v-for="cas of ukolyPodleCasu" class="list-group-item" :key="cas.id">
                 <div class="row" @click.prevent="editovatCas = editovatCas ? null : cas">
                     <div class="col-12 col-sm-9 font-weight-bold" v-html="nazev(cas.ukol, true)" />
                     <div class="col-12 col-sm-3 text-right">{{ (cas.zacatek.getHours()+"").padStart(2, "0") }}:{{ (cas.zacatek.getMinutes()+"").padStart(2, "0") }}</div>
@@ -66,6 +62,7 @@
                 </div>
             </li>
         </ul>
+
     </div>
 </template>
 
@@ -125,7 +122,7 @@ export default {
             return nazevArr.reverse().join(' &ndash; ')
         },
         vyberUkol(ukol) {
-            this.$router.push('/' + ukol.id)
+            this.$router.push('/ukoly/' + ukol.id)
         },
         odebratZFronty(ukol) {
             this.$store.dispatch('deletePrioritniFronta', ukol)
