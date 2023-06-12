@@ -13,10 +13,10 @@ if (!$userId) {
         return $ukol->id;
     }, $ukoly);
 
-    $casy = $db->select('*')->from('casy')->where("ukol_id IN %in", $ukolyIds)->fetchAll();
-    $specifickeUkoly = $db->select('*')->from('specificke_ukoly')->where("ukol_id IN %in", $ukolyIds)->fetchall();
+    $casy = $db->select('*')->from('casy')->where("uzivatel_id = %u", $userId)->fetchAll();
+    $specifickeUkoly = $db->select('*')->from('specificke_ukoly')->where("uzivatel_id = %u", $userId)->fetchall();
     $poznamky = $db->select('*')->from('poznamky')->where("ukol_id IN %in", $ukolyIds)->fetchAll();
-    $kvoty = $db->select('*')->from('kvoty')->where("ukol_id IN %in", $ukolyIds)->fetchAll();
+    $kvoty = $db->select('*')->from('kvoty')->where("uzivatel_id = %u", $userId)->fetchAll();
 
     $bodyKvoty = $db->select('*')->from('body_kvoty')->where("ukol_id IN %in", $ukolyIds)->fetchAll();
     $bodyKvotyIds = array_map(function ($kvota) {
