@@ -1,5 +1,7 @@
 <template>
     <div>
+        <h5 class="font-weight-bold mt-5 mb-4 text-center">Plánování</h5>
+
         <div class="form-group">
             <div class="row">
                 <div class="col-12 col-sm-4 text-center" @click="predchoziDen">
@@ -15,7 +17,7 @@
         </div>
 
         <ul class="list-group">
-            <li class="list-group-item list-group-item-action" v-for="kvota of kvoty" :style="{background: kvota.progresbar}" @click.prevent="gotoUkol(kvota.ukol)">
+            <li class="list-group-item list-group-item-action" :key="kvota.id" v-for="kvota of kvoty" :style="{background: kvota.progresbar}" @click.prevent="gotoUkol(kvota.ukol)">
                 <div class="row">
                     <div class="col-12 col-sm-10" v-html="nazev(kvota.ukol)"></div>
                     <div class="col-12 col-sm-2 text-right">{{ kvota.odpracovano }}/{{ kvota.cas }}</div>
@@ -41,7 +43,7 @@
 
 <script>
 export default {
-    name: "PlanovaniView",
+    name: "PlanovaniWidget  ",
     data: () => {
         const date = new Date()
         const zitra = new Date()

@@ -133,12 +133,26 @@ nav a.router-link-exact-active {
   color: #FF0;
 }
 
+.btn.btn-warning {
+  background-color: #FFC;
+  color: #950;
+}
+
 .list-group-item-warning {
   background-color: #FFC;
   color: #950;
 }
 .list-group-item-action.list-group-item-warning:hover {
   background-color: #FF5;
+}
+
+.list-group-item-primary {
+  background-color: #090b97;
+  color: #FFF;
+}
+.list-group-item-primary.list-group-item-action:hover {
+  background-color: #090;
+  color: #FF0;
 }
 
 nav {

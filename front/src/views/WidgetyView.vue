@@ -5,6 +5,7 @@
         <UkolyPodleTaguWidget title="Mimo práci" tag="rutina" />
         <StatistikaWidget />
         <ZpracovaneUkolyWidget />
+        <PlanovaniWidget />
     </div>
 </template>
 
@@ -13,9 +14,10 @@ import PlneniPlanuWidget from '@/widgets/PlneniPlanuWidget.vue';
 import StatistikaWidget from '@/widgets/StatistikaWidget.vue';
 import UkolyPodleTaguWidget from '@/widgets/UkolyPodleTaguWidget.vue';
 import ZpracovaneUkolyWidget from '@/widgets/ZpracovaneUkolyWidget.vue';
+import PlanovaniWidget from '../widgets/PlanovaniWidget.vue';
 
 export default {
     name: "WidgetyView",
-    components: { PlneniPlanuWidget, StatistikaWidget, ZpracovaneUkolyWidget, UkolyPodleTaguWidget }
+    components: { PlneniPlanuWidget, StatistikaWidget, ZpracovaneUkolyWidget, UkolyPodleTaguWidget, PlanovaniWidget }
 }
 </script>

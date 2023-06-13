@@ -23,7 +23,7 @@ export default createStore({
   },
   getters: {
     isAdmin(state) {
-      return false // state.data.uzivatel_id === 1
+      return true // state.data.uzivatel_id === 1
     },
     authenticationData(state) {
       return state.authenticationData

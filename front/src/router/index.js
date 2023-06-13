@@ -1,10 +1,8 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-// import FrontaView from '../views/FrontaView.vue'
-// import StatistikyView from '../views/StatistikyView.vue'
 import DokonceneView from '../views/DokonceneView.vue'
 import WidgetyView from '../views/WidgetyView.vue'
-// import PlanovaniView from '../views/PlanovaniView.vue'
+import SekceView from '../views/SekceView.vue'
 
 const routes = [
   {
@@ -21,6 +19,11 @@ const routes = [
     path: '/ukoly/:id?',
     name: 'ukoly',
     component: HomeView
+  },
+  {
+    path: '/:sekce',
+    name: 'sekce',
+    component: SekceView
   },
   {
     path: '/',

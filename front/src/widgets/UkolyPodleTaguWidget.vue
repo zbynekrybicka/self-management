@@ -38,6 +38,9 @@ export default {
         nazev(ukol) {
             return this.$store.getters.nazev(ukol, " &ndash; ")
         },
+        zacitSPraci(ukol) {
+            this.$store.dispatch('postPrepnoutUkol', ukol)
+        }
     }
 }
 </script>

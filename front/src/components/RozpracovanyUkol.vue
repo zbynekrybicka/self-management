@@ -11,8 +11,6 @@
     </div>
 </template>
 <script>
-import RychlySeznamUkolu from '@/components/RychlySeznamUkolu.vue'
-
 export default {
     name: "RozpracovanyUkol",
     data: () => ({
@@ -63,7 +61,6 @@ export default {
         clearInterval(this.interval);
         this.interval = null;
     },
-    components: { RychlySeznamUkolu }
 }
 </script>
 
