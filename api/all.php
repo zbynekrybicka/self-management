@@ -24,6 +24,17 @@ if (!$userId) {
     }, $bodyKvoty);
     $body = $db->select('*')->from('body')->where('body_kvota_id IN %in', $bodyKvotyIds)->fetchAll();
 
+    $partneriRows = $db->select('*')->from('partneri')->where('uzivatel1_id = %u OR uzivatel2_id = %u', $userId, $userId)->fetchAll();
+    $partneriIds = [$userId];
+    foreach ($partneriRows as $row) {
+        if ($row->uzivatel1_id === $userId) {
+            $partneriIds[] = $row->uzivatel2_id;
+        } else {
+            $partneriIds[] = $row->uzivatel1_id;
+        }
+    }
+    $partneri = $db->select('id, jmeno')->from('uzivatele')->where('id IN %in', $partneriIds)->fetchPairs('id', 'jmeno');
+
     echo json_encode([
         'uzivatel_id' => $userId,
         'system' => $system,
@@ -34,6 +45,7 @@ if (!$userId) {
         'poznamky' => $poznamky,
         'kvoty' => $kvoty,
         'body_kvoty' => $bodyKvoty,
-        'body' => $body
+        'body' => $body,
+        'partneri' => $partneri,
     ]);
 }

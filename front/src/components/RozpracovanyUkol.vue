@@ -2,10 +2,14 @@
     <div class="rozpracovany-ukol-okno">
         <div class="row">
             <div class="col-12 col-sm-6">
-                <h6 class="text-center font-weight-bold border border-success pt-2 pb-2 cursor-pointer" @click="vyberUkol(predchoziUkol)" v-html="nazev(predchoziUkol)" />
+                <h6 class="text-center font-weight-bold border border-success pt-2 pb-2 cursor-pointer" @click="vyberUkol(predchoziUkol)">
+                    <span v-html="nazev(predchoziUkol)" /><br/>
+                    <a href="#" @click.stop="zacniPredchoziUkol">Znovu začít</a>
+                </h6>
+                
             </div>
             <div class="col-12 col-sm-6">
-                <h6 class="text-center font-weight-bold border border-primary pt-2 pb-2 cursor-pointer progres-bar" @click="vyberUkol(rozpracovanyUkol)" v-html="nazev(rozpracovanyUkol) + '<br />' + casUkolu" />
+                <h6 class="text-center font-weight-bold border border-primary pt-2 pb-2 cursor-pointer" :style="progress" @click="vyberUkol(rozpracovanyUkol)" v-html="nazev(rozpracovanyUkol) + '<br />' + casUkolu" />
             </div>
         </div>
     </div>
@@ -38,7 +42,7 @@ export default {
         progress() {
             this.seconds
             const plan = this.$store.getters.plan().find(p => p.ukol_id === this.rozpracovanyUkol.id)
-            return plan ? plan.splneno + "%" : "0%"
+            return this.$store.getters.progressbar(plan ? plan.splneno : 0)
         }
     },
     methods: {
@@ -52,6 +56,9 @@ export default {
         },
         vyberUkol(ukol) {
             this.$router.push('/ukoly/' + ukol.id)
+        },
+        zacniPredchoziUkol() {
+            this.$store.dispatch('postPrepnoutUkol', this.predchoziUkol)
         }
     },
     mounted() {
@@ -67,8 +74,5 @@ export default {
 <style>
 .cursor-pointer {
     cursor: pointer;
-}
-.progres-bar {
-    background: linear-gradient(to right, #CFC 0%, #CFC v-bind("progress"), white v-bind("progress"), white 100%)
 }
 </style>

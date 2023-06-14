@@ -1,8 +1,8 @@
 <template>
     <div>
         <PlneniPlanuWidget />
-        <UkolyPodleTaguWidget title="Prioritní úkoly" tag="prioritni" />
-        <UkolyPodleTaguWidget title="Mimo práci" tag="rutina" />
+        <UkolyPodleTaguWidget title="Mimo práci" tag="rutina" action="start" />
+        <UkolyPodleTaguWidget title="Networking" tag="networking" action="open" />
         <StatistikaWidget />
         <ZpracovaneUkolyWidget />
         <PlanovaniWidget />

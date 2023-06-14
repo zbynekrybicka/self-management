@@ -6,7 +6,7 @@ function maPravoEditovatUkol($db, $ukol_id, $user_id) {
 }
 
 function maPravoPridavatBody($db, $body_kvota_id, $user_id) {
-    $ukol_id = $db->select('ukol_id')->from('body_kvoty')->where('body_kvota_id = %u', $body_kvota_id)->fetchSingle();
+    $ukol_id = $db->select('ukol_id')->from('body_kvoty')->where('id = %u', $body_kvota_id)->fetchSingle();
     if (!$ukol_id) {
         return false;
     }

@@ -19,9 +19,22 @@ export default createStore({
     filtrace: {
       zacatek: dnes(0, 0, 0, 0),
       konec: dnes(23, 59, 0, 0),
-    }
+    },
+    nacteno: new Date()
   },
   getters: {
+    partneri(state) {
+      return state.data.partneri
+    },
+    progressbar: () => splneno => {
+      return `linear-gradient(to right, #CFC 0%, #CFC ${splneno}%, white ${splneno}%, white 100%)`
+    },
+    bodyByUkolId: (state, getters) => id => {
+      return state.data.body.filter(b => (getters.bodyKvotyById(id).map(bk => bk.id).includes(b.body_kvota_id)))
+    },
+    bodyKvotyById: state => id => {
+      return state.data.body_kvoty.filter(bk => bk.ukol_id === id)
+    },
     isAdmin(state) {
       return true // state.data.uzivatel_id === 1
     },
@@ -47,7 +60,7 @@ export default createStore({
     kvotyByUkolId: state => id => {
       return state.data.kvoty.filter(k => k.ukol_id === id).sort((a, b) => a.datum > b.datum ? 1 : 0)
     },
-    plan: state => (den = null) => {
+    plan: (state, getters) => (den = null) => {
       const kvoty = state.data.kvoty
       .filter(k => {
         if (den) {
@@ -106,7 +119,7 @@ export default createStore({
           odpracovano: Math.floor(cas / 60 / 60) + ":" + ((Math.floor(cas / 60) % 60 )+"").padStart(2, "0") + ":" + (Math.floor(cas % 60)+"").padStart(2, "0"),
           ukol: state.data.ukoly.find(u => u.id === r.ukol_id),
           splneno,
-          progresbar: `linear-gradient(to right, #CFC 0%, #CFC ${splneno}%, white ${splneno}%, white 100%)`,
+          progresbar: getters.progressbar(splneno),
           aktualniKonec
         }
       })
@@ -275,6 +288,19 @@ export default createStore({
     }
   },  
   mutations: {
+    resetNacteno(state) {
+      state.nacteno = new Date()
+    },
+    deleteBodyKvoty(state, id) {
+      const index = state.data.body_kvoty.findIndex(bk => bk.id === id)
+      state.data.body_kvoty.splice(index, 1)
+    },
+    postBody(state, data) {
+      state.data.body.push(data)
+    },
+    postBodyKvoty(state, data) {
+      state.data.body_kvoty.push(data)
+    },
     putUkolVratit(state, id) {
       const ukol = state.data.ukoly.find(u => u.id === id)
       ukol.dokonceno = null
@@ -364,6 +390,54 @@ export default createStore({
     }
   },
   actions: {
+    deleteBodyKvoty({ commit, state }, kvota) {
+      commit('setLoading', true)
+      return axios
+        .delete(window.API_URL + '/body-kvoty/' + kvota.id, { headers: { Authorization: `Bearer ${state.authToken}` }})
+        .then((response) => {
+          commit("deleteBodyKvoty", response.data)
+          commit("success", response.status)
+        })
+        .catch((error) => {
+          console.error(error)
+          commit("setError", error.response.status)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
+    postBody({ commit, state }, data) {
+      commit('setLoading', true)
+      return axios
+        .post(window.API_URL + '/body', data, { headers: { Authorization: `Bearer ${state.authToken}` }})
+        .then((response) => {
+          commit("postBody", response.data)
+          commit("success", response.status)
+        })
+        .catch((error) => {
+          console.error(error)
+          commit("setError", error.response.status)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
+    postBodyKvoty({ commit, state }, data) {
+      commit('setLoading', true)
+      return axios
+        .post(window.API_URL + '/body-kvoty', data, { headers: { Authorization: `Bearer ${state.authToken}` }})
+        .then((response) => {
+          commit("postBodyKvoty", response.data)
+          commit("success", response.status)
+        })
+        .catch((error) => {
+          console.error(error)
+          commit("setError", error.response.status)
+        })
+        .finally(() => {
+          commit('setLoading', false)
+        })
+    },
     putUkolVratit({ commit, state }, { id }) {
       commit('setLoading', true)
       return axios
@@ -693,16 +767,22 @@ export default createStore({
     },
     sync({ state, dispatch, getters, commit }) {
       if (getters.isLoggedIn) {
-        return axios.get(window.API_URL + '/system/posledni_update', { headers: { Authorization: `Bearer ${state.authToken}` }} )
-          .then((response) => {
-            if (state.data.system.posledni_update !== response.data && !state.mojeZmena) {
-              dispatch("getAll")
-            } else if (state.mojeZmena) {
-              commit("casoveRazitko", response.data)          
-            }
-          })
+        const datum = new Date()
+        if (datum.getDate() !== state.nacteno.getDate()) {
+          dispatch("getAll")
+          commit("resetNacteno")
+        } else {
+          return axios.get(window.API_URL + '/system/posledni_update', { headers: { Authorization: `Bearer ${state.authToken}` }} )
+            .then((response) => {
+              if (state.data.system.posledni_update !== response.data && !state.mojeZmena) {
+                dispatch("getAll")
+              } else if (state.mojeZmena) {
+                commit("casoveRazitko", response.data)          
+              }
+            })
+        }
       }
-  }
+    }
   },
   modules: {
   }

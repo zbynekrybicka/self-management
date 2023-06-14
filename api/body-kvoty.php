@@ -56,7 +56,13 @@ if (!$userId) {
     http_response_code(204);
 } else if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     // DELETE
-    $db->delete('body_kvoty')->where('id = %u', $data->id)->execute();
+    $ukol_id = $db->select('ukol_id')->from('body_kvoty')->where('id = %u', $_GET['id'])->fetchSingle();
+    if (!maPravoEditovatUkol($db, $ukol_id, $userId)) {
+        http_response_code(401);
+        exit;
+    }
+
+    $db->delete('body_kvoty')->where('id = %u', $_GET['id'])->execute();
     http_response_code(204);
 } else {
     // INVALID METHOD

@@ -11,26 +11,19 @@
           <button class="btn btn-success" @click="dokonceno">Dokončeno</button>
         </div>
 
-        <div v-if="muzeTagovatUkoly">
-          <div class="mr-2 mb-2" v-if="!jeVeFronte && !!vybranyUkol.ukol_id">
-            <button class="btn btn-primary" @click="pridatDoFronty">Přidat do fronty</button>
-          </div>
-          <div class="mr-2 mb-2" v-if="jeVeFronte && !!vybranyUkol.ukol_id">
-            <button class="btn btn-danger" @click="odebratZFronty">Odebrat z fronty</button>
-          </div>
-          <div class="mr-2 mb-2" v-if="!jeRutina && !!vybranyUkol.ukol_id">
-            <button class="btn btn-primary" @click="oznacitZaRutinu">Označit jako rutinu</button>
-          </div>
-          <div class="mr-2 mb-2" v-if="jeRutina && !!vybranyUkol.ukol_id">
-            <button class="btn btn-danger" @click="zrusitRutinu">Zrušit rutinu</button>
-          </div>
-        </div>
-
         <div class="mr-2 mb-2">
           <button class="btn btn-primary" @click="presunoutUkol = true">Přesunout</button>
         </div>
         <div class="mr-2 mb-2">
           <button class="btn btn-primary" @click="prevestNaProjekt">Převést na projekt</button>
+        </div>
+
+        <div class="mr-2 mb-2">
+          <span v-for="(tag, index) of tagy" :key="index" class="badge badge-success mr-2" @click="odstranitTag(tag)">{{ tag }}</span>
+          <input type="text" class="form-control" @keyup.enter="pridatTag" list="dostupneTagy" placeholder="Přidat tag...">
+          <datalist id="dostupneTagy">
+            <option v-for="(tag, index) of dostupneTagy" :key="index">{{ tag }}</option>
+          </datalist>
         </div>
       </div>
       
@@ -41,15 +34,14 @@
         <textarea class="form-control" v-model="vybranyUkol.popis" rows="5" @change="ulozitPopis"/>
       </div>
 
-      <!--h6 class="font-weight-bold mt-5 mb-4 text-center">Poznámky</h6>
-
       <div class="form-group">
-        <input class="form-control" type="text" @keyup.enter="pridatPoznamku" placeholder="Přidat poznámku..."/>
+        <input class="form-control" type="text" @keyup.enter="pridatPoznamku" placeholder="Přidat komentář..."/>
       </div>
       <ul class="list-group">
         <li v-for="poznamka of poznamky" class="list-group-item" :key="poznamka.id">
           <div class="row">
             <div class="col-12">
+              <span v-html="autor(poznamka)"/> &ndash;
               {{ poznamka.zapsano.getDate() }}. 
               {{ poznamka.zapsano.getMonth() }}. 
               {{ poznamka.zapsano.getFullYear() }}
@@ -58,7 +50,9 @@
             <div class="col-12 font-weight-bold">{{ poznamka.poznamka }}</div>
           </div>
         </li>
-      </ul-->      
+      </ul>
+
+      <hr />
 
       <div v-if="muzePridavatKvoty">
         <h6 class="font-weight-bold mt-5 mb-4 text-center">Kvóty</h6>
@@ -83,6 +77,35 @@
         </ul>
       </div>
 
+
+      <div v-if="muzePridavatBody">
+        <h6 class="font-weight-bold mt-5 mb-4 text-center">Body</h6>
+        <div class="form-group">
+          <div class="row">
+            <div class="col-12 col-sm-6">
+              <input class="form-control" type="text" v-model="nazevBodu" />
+            </div>
+            <div class="col-12 col-sm-6">
+              <input class="form-control" type="number" placeholder="Počet bodů" value="0" @keyup.enter="pridatBodyKvotu" />
+            </div>
+          </div>
+        </div>
+
+        <ul class="list-group">
+          <li class="list-group-item list-group-item-action" :style="{ background: progress(kvota) }" v-for="kvota of bodyKvoty" @click="bodyKvota = bodyKvota !== kvota ? kvota : null" :key="kvota.id">
+            <div class="row">
+              <div class="col-6">{{ kvota.nazev }}</div>
+              <div class="col-6 text-right">{{ splnenoBodu(kvota) }}/{{ kvota.body }} <span class="delete" @click.stop="odstranitBodyKvotu(kvota)">&times;</span></div>
+              <div class="col-12" v-if="bodyKvota === kvota">
+                <input type="number" class="form-control" value="1" @click.stop="" @keyup.enter="pridatBody($event, kvota)" ref="pridatBody" />
+              </div>
+            </div>
+          </li>
+        </ul>
+
+
+      </div>
+
       <!--h6 class="font-weight-bold mt-5 mb-4 text-center">Body</h6-->
 
     </div>
@@ -93,7 +116,7 @@
 
     <hr />
 
-    <NovyUkol @novy-ukol="prejdiNaNovyProjekt" />
+    <NovyUkol />
     <PresunoutUkol v-if="presunoutUkol" @close="presunoutUkol = false" />
   </div>
 </template>
@@ -108,10 +131,14 @@ export default {
   components: { NovyUkol, SeznamUkolu, PresunoutUkol },
   data: () => ({
     datumKvoty: new Date().toISOString().split('T')[0],
-    vybranyProjekt: 0,
+    nazevBodu: '',
+    bodyKvota: null,
     presunoutUkol: false
   }),
   computed: {
+    muzePridavatBody() {
+      return this.$store.getters.isAdmin
+    },
     muzePridavatKvoty() {
       return this.$store.getters.isAdmin
     },
@@ -149,17 +176,76 @@ export default {
       }
       return nazev.reverse().join(' &ndash; ')
     },
-    jeVeFronte() {
-      return this.$store.getters.ukolyVeFronte.includes(this.vybranyUkol)
-    },
-    jeRutina() {
-      return !!this.$store.getters.specificke_ukoly.find(su => su.ukol_id === this.id && su.typ === "rutina")
-    },
     kvoty() {
       return this.$store.getters.kvotyByUkolId(this.id)
+    },
+    bodyKvoty() {
+      return this.$store.getters.bodyKvotyById(this.id)
+    },
+    body() {
+      return this.$store.getters.bodyByUkolId(this.id)
+    },
+    tagy() {
+      return Array.from(new Set(this.$store.getters.specificke_ukoly.filter(su => su.ukol_id === this.id).map(su => su.typ)))
+    },
+    dostupneTagy() {
+      return Array.from(new Set(this.$store.getters.specificke_ukoly.map(su => su.typ))).filter(t => !this.tagy.includes(t))
     }
   },
   methods: {
+    autor(poznamka) {
+      const partneri = this.$store.getters.partneri
+      return (poznamka.uzivatel_id in partneri) ? partneri[poznamka.uzivatel_id] : "<i>neznámý uživatel</i>" 
+    },
+    odstranitTag(typ) {
+      this.$store.dispatch("deleteSpecifickeUkoly", {
+        ukol_id: this.id,
+        typ
+      })
+    },
+    pridatTag(e) {
+      if (e.target.value.length > 0) {
+        this.$store.dispatch("postSpecifickeUkoly", {
+          ukol_id: this.id,
+          typ: e.target.value
+        }).then(() => {
+          e.target.value = ""
+        })
+      }
+    },
+    odstranitBodyKvotu(kvota) {
+      if (confirm('Opravdu chcete odstranit toto bodové hodnocení?')) {
+        this.$store.dispatch('deleteBodyKvoty', kvota)
+      }
+    },
+    splnenoBodu(kvota) {
+      return this.body.filter(b => b.body_kvota_id === kvota.id).reduce((a, b) => a + b.body, 0)
+    },
+    progress(kvota) {
+      return this.$store.getters.progressbar(this.splnenoBodu(kvota) / kvota.body * 100)
+    },
+    pridatBody(e, kvota) {
+      if (e.target.value > 0) {
+        this.$store.dispatch('postBody', {
+          body_kvota_id: kvota.id,
+          body: e.target.value
+        }).then(() => {
+          this.bodyKvota = null
+        })
+      }
+    },
+    pridatBodyKvotu(e) {
+      if (e.target.value > 0) {
+        this.$store.dispatch('postBodyKvoty', {
+          ukol_id: this.id,
+          nazev: this.nazevBodu,
+          body: e.target.value
+        }).then(() => {
+          this.nazevBodu = ""
+          e.target.value = ""
+        })
+      }
+    },
     smazatKvotu(kvota) {
       if (confirm('Opravdu chcete smazat kvótu?')) {
         this.$store.dispatch('deleteKvoty', kvota)
@@ -183,12 +269,6 @@ export default {
         })
       }
     },
-    oznacitZaRutinu() {
-      this.$store.dispatch('postSpecifickeUkoly', { ukol_id: this.id, typ: "rutina" })
-    },
-    zrusitRutinu() {
-      this.$store.dispatch('deleteSpecifickeUkoly', { ukol_id: this.id, typ: "rutina" })
-    },
     ulozitNadpis(e) {
       console.log(e.target.innerText)
       this.vybranyUkol.nazev = e.target.innerText
@@ -207,11 +287,6 @@ export default {
         this.$router.push('/ukoly/' + (ukol_id ? ukol_id : ''))
       })
     },
-    prejdiNaNovyProjekt() {
-      if (!this.vybranyUkol) {
-        this.vybranyProjekt = this.projekty.length
-      }
-    },
     pridatDoFronty() {
       this.$store.dispatch('postSpecifickeUkoly', { ukol_id: this.vybranyUkol.id, typ: "prioritni" })
     },
@@ -224,6 +299,31 @@ export default {
           ukol_id: null 
       })
     }
+  },
+
+  watch: {
+    bodyKvota(value) {
+      if (value !== null) {
+        this.$nextTick(() => {
+          this.$refs.pridatBody[0].focus()
+        })
+      }
+    }
   }
 }
 </script>
+
+<style scoped>
+span.delete {
+  font-size: 1.5rem;
+  margin: 0;
+  padding: 0;
+  margin-left: 2rem;
+  line-height: 1.5rem;
+  vertical-align: middle;
+}
+span.delete:hover {
+  color:brown;
+  background-color: #FF5;
+}
+</style>

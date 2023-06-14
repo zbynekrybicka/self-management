@@ -15,7 +15,6 @@ export default {
                     ukol_id: parseInt(this.$route.params.id),
                     nazev: e.target.value
                 })
-                this.$emit('novy-ukol')
                 e.target.value = ""
             }
         }
